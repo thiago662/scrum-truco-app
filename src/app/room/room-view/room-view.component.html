@@ -1,0 +1,49 @@
+<!-- <p>room-view works!</p>
+<p>{{ id }}</p>
+<p>{{ room?.id }}</p>
+<p>{{ room?.title }}</p> -->
+<div>
+    <!-- <div class="container d-flex justify-content-sm-around align-items-center overflow-auto" style="height: 750px;">rem -->
+    <div class="container d-flex justify-content-sm-around align-items-center overflow-auto" style="height: 30rem;">
+        @for (item of users; track $index) {
+            <div class="text-center d-flex flex-column align-items-center">
+                <div class="card border-5" style="height: 90px; width: 70px;" [ngClass]="!(room?.isVisible) && !item.selected ? 'bg-light' : 'bg-dark'">
+                    <div class="card-body d-flex justify-content-around">
+                        <img src="./assets/poker-logo-preto.png" alt="?" *ngIf="!room?.isVisible && !item.selected" style="height: 40px; width: 40px;">
+                        <img src="./assets/poker-logo-branco.png" alt="?" *ngIf="!room?.isVisible && item.selected" style="height: 40px; width: 40px;">
+                        <h4 class="card-title text-light" *ngIf="room?.isVisible">{{ item.value }}</h4>
+                    </div>
+                </div>
+                {{ item.name }}
+            </div>
+        }
+    </div>
+</div>
+
+<footer class="bg-light text-center fixed-bottom">
+    <div class="container p-3">
+        <!-- @if (user?.isAdm) { -->
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="show()">
+                <i [ngClass]="!(room?.isVisible) ? 'far fa-eye' : 'far fa-eye-slash'" class=""></i>
+            </button>
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="reset()">
+                <i class="fas fa-redo"></i>
+            </button>
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="saveRoom()">
+                <i class="far fa-star"></i>
+            </button>
+            <!-- <button class="btn btn-outline-success rounded-circle mx-1">
+                <i class="fas fa-star"></i>
+            </button> -->
+        <!-- } -->
+    </div>
+    <div class="p-3 overflow-auto">
+        <div class="container text-center d-flex justify-content-md-between">
+        <div *ngFor="let point of points" class="card border-5" (click)="sendValue(point)" style="height: 90px; min-width: 70px;" [ngClass]="point.selected ? 'bg-dark text-light' : 'bg-light text-dark'">
+            <div class="card-body">
+            <h4 class="card-title">{{ point.value }}</h4>
+            </div>
+        </div>
+        </div>
+    </div>
+</footer>

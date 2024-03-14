@@ -1,0 +1,105 @@
+<nav class="navbar navbar-expand-md navbar-light sticky-top bg-body-tertiary mb-3">
+	<div class="container">
+        <button class="navbar-toggler" type="button" (click)="openCanvasEnd(contentnavbar)"><i class="fas fa-bars"></i></button>
+        <div class="col-md-3">
+            <a class="navbar-brand" [routerLink]="'.'">
+                <!-- <img src="https://getbootstrap.com/docs/5.3/assets/brand/bootstrap-logo.svg" alt="Logo" width="30" height="24" class="d-inline-block align-text-top"> -->
+                <img src="./assets/poker-logo-preto.png" alt="Logo" height="24" class="d-inline-block align-text-top">
+                Scrum Truco
+            </a>
+        </div>
+		<div class="collapse navbar-collapse justify-content-center" [ngbCollapse]="isMenuCollapsed">
+            <ng-container *ngTemplateOutlet="contentnavbar"></ng-container>
+		</div>
+        <div class="col-md-3 text-end">
+            <button class="btn btn-primary rounded-circle" type="button" (click)="open(contentmodal)"><i class="fas fa-user"></i></button>
+        </div>
+	</div>
+</nav>
+
+<ng-template #contentnavbar let-offcanvas>
+    <ul class="nav navbar-nav col-md-auto">
+        @if (checkCanvas()) {
+            <li class="nav-item">
+                <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss('Cross click')"></button>
+            </li>
+        }
+        <li class="nav-item active">
+            <a class="nav-link px-3" [routerLink]="'rooms'" (click)="offcanvas.dismiss('Cross click')">Salas salvas</a>
+        </li>
+        <li class="nav-item active">
+            <a class="nav-link px-3" [routerLink]="'rooms/search'" (click)="offcanvas.dismiss('Cross click')">Pesquisar sala</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link px-3" [routerLink]="'rooms/add'" (click)="offcanvas.dismiss('Cross click')">Criar sala</a>
+        </li>
+    </ul>
+</ng-template>
+
+<ng-template #contentmodal let-c="close" let-d="dismiss">
+    <form [formGroup]="userForm">
+        <div class="modal-header">
+            <h4 class="modal-title" id="modal-basic-title">Usuario</h4>
+            <button type="button" class="btn-close" aria-label="Close" (click)="d('Cross click')"></button>
+        </div>
+        @if (isLogged) {
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="name" formControlName="name">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" formControlName="email">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="password" formControlName="password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" (click)="updateUser()">Salvar</button>
+                <button type="submit" class="btn btn-primary" (click)="logout()">Logout</button>
+                <button type="submit" class="btn btn-primary" (click)="deleteUser()">Excluir</button>
+            </div>
+        } @else if (!isLogged && mode == 'create') {
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="name" formControlName="name">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" formControlName="email">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="password" formControlName="password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" (click)="createUser()">Salvar</button>
+            </div>
+        } @else if (!isLogged && mode == 'login') {
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" formControlName="email">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="password" formControlName="password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" (click)="login()">Logar</button>
+            </div>
+        } @else if (!isLogged) {
+            <div class="modal-body">
+                <button type="button" class="btn btn-primary" (click)="selectedMode('login')">Login</button>
+                <button type="button" class="btn btn-primary" (click)="selectedMode('create')">Criar</button>
+            </div>
+            <div class="modal-footer"></div>
+        }
+    </form>
+</ng-template>

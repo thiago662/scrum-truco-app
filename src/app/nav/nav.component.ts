@@ -102,7 +102,7 @@ export class NavComponent {
   async createUser() {
     var userForm = await this.userForm.value;
 
-    var emailExist = await this.navService.checkEmailExist(userForm?.email);
+    var emailExist = await this.navService.checkEmailExistFirebase(userForm?.email);
 
     if (emailExist) {
       this.isLogged = await false;
@@ -114,7 +114,7 @@ export class NavComponent {
       name: userForm?.name ?? '',
       email: userForm?.email ?? '',
       password: userForm?.password ?? '',
-      rooms: [],
+      rooms: {},
     };
 
     var userFirebase: any = await this.navService.createUser(user);
@@ -132,7 +132,7 @@ export class NavComponent {
     var userNow = await this.navService.getUser();
 
     if (userNow?.email != userForm?.email) {
-      var emailExist = await this.navService.checkEmailExist(userForm?.email);
+      var emailExist = await this.navService.checkEmailExistFirebase(userForm?.email);
 
       if (emailExist) {
         return;

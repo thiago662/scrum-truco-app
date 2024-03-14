@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collectionData, updateDoc, addDoc, doc, collection, getDoc, getDocs, query, deleteDoc } from '@angular/fire/firestore';
+import { Firestore, collectionData, updateDoc, addDoc, doc, collection, getDoc, getDocs, query, deleteDoc, FieldPath, deleteField } from '@angular/fire/firestore';
 import { QueryConstraint, where } from 'firebase/firestore';
 
 @Injectable({
@@ -16,8 +16,14 @@ export class RoomService {
     return await room;
   }
 
+  async createRoom(room: any) {
+    var roomFirebase = await this.setFirebaseRoom(room);
+
+    return await roomFirebase;
+  }
+
   async getFirebaseRoom(id: any) {
-    const docRef = doc(this.firestore, 'rooms', id);
+    const docRef = await doc(this.firestore, 'rooms', id);
 
     const docSnap = await getDoc(docRef);
 
@@ -30,12 +36,6 @@ export class RoomService {
     roomFirebase.id = await docRef.id;
 
     return await roomFirebase;
-  }
-
-  async createRoom(room: any) {
-    var roomFirebase = await this.setFirebaseRoom(room);
-
-    return roomFirebase;
   }
 
   async setFirebaseRoom(room: any) {
@@ -55,5 +55,17 @@ export class RoomService {
     }
 
     return await roomReturn;
+  }
+
+  async editFirebaseRoomField(id: any, field: any|FieldPath, value: any) {
+    const docRef = await doc(this.firestore, 'rooms', id);
+
+    await updateDoc(docRef, field, value);
+  }
+
+  async removeFirebaseRoom(id: any) {
+    const docRef = await doc(this.firestore, 'rooms', id);
+
+    await deleteDoc(docRef);
   }
 }

@@ -1,8 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Firestore, collectionData, addDoc, doc, collection, setDoc, getDoc, getDocFromServer, updateDoc, onSnapshot, getDocs, query, DocumentReference, FieldPath } from '@angular/fire/firestore';
+import { Firestore, collectionData, addDoc, doc, collection, setDoc, getDoc, getDocFromServer, updateDoc, onSnapshot, getDocs, query, DocumentReference, FieldPath, deleteField, arrayRemove, deleteDoc } from '@angular/fire/firestore';
 import { Observable, Subject, map, switchMap } from 'rxjs';
 import { NavService } from '../../nav/nav.service';
+import { RoomService } from '../room.service';
 
 @Component({
   selector: 'app-room-view',
@@ -15,6 +16,7 @@ export class RoomViewComponent {
   points: any;
   room: any;
   user: any;
+  userConfig: any;
   users: any;
 
   firestore: Firestore = inject(Firestore);
@@ -23,12 +25,17 @@ export class RoomViewComponent {
     private router: Router,
     private route: ActivatedRoute,
     private navService: NavService,
+    private roomService: RoomService,
   ) {
     this.id = this.route.snapshot.params['id'];
 
-    this.getFirebaseRoom(this.id);
+    this.initRoom();
+  }
 
-    this.getUser();
+  async initRoom() {
+    await this.getUser();
+
+    await this.getFirebaseRoom(this.id);
   }
 
   async getUser() {
@@ -38,67 +45,85 @@ export class RoomViewComponent {
   }
 
   async getFirebaseRoom(id: any) {
-    const docRef = doc(this.firestore, 'rooms', this.id);
+    const docRef = await doc(this.firestore, 'rooms', id);
 
-    const unsub = onSnapshot(docRef, (snapshot) => {
+    const unsub = await onSnapshot(docRef, (snapshot) => {
       this.room = snapshot.data();
+
+      if (this.room == undefined) {
+        this.router.navigate(['/rooms/']);
+      }
 
       this.points = this.room?.points;
 
-      const indexx = Object.keys(this.room?.users);
+      const users = Object.keys(this.room?.users);
 
-      let arr = [];
+      let arrayUsers = [];
 
-      for (let index = 0; index < indexx.length; index++) {
-        arr.push(this.room?.users[indexx[index]]);
+      for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
+        arrayUsers.push(this.room?.users[users[indexUserId]]);
+
+        if (this.user?.id == users[indexUserId]) {
+          this.userConfig = this.room?.users[users[indexUserId]];
+        }
       }
 
-      this.users = arr;
+      this.users = arrayUsers;
     });
   }
 
-  async show() {
-    const docRef = await doc(this.firestore, 'rooms', this.id);
-
-    await updateDoc(docRef, 'isVisible', !this.room?.isVisible);
+  async sendValue(point: any) {
+    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'value'), point?.value);
+    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'selected'), true);
   }
 
-  async reset() {
-    const docRef = await doc(this.firestore, 'rooms', this.id);
+  async showCards() {
+    await this.roomService.editFirebaseRoomField(this.id, 'isVisible', !this.room?.isVisible);
+  }
 
-    const indexx = Object.keys(this.room?.users);
+  async resetCards() {
+    const users = await Object.keys(this.room?.users);
 
-    let arr = [];
-
-    for (let index = 0; index < indexx.length; index++) {
-      await updateDoc(docRef, new FieldPath('users', indexx[index], 'value'), '');
-      await updateDoc(docRef, new FieldPath('users', indexx[index], 'selected'), false);
+    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
+      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'value'), '');
+      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'selected'), false);
     }
+
+    await this.showCards();
   }
 
   async saveRoom() {
-    const docRef = await doc(this.firestore, 'rooms', this.id);
-
-    await updateDoc(docRef, new FieldPath('users', this.user?.id), {
+    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), {
       'id': this.user?.id,
       'name': this.user?.name,
       'selected': false,
       'value': '',
     });
 
-    await this.user.rooms.push({
-      id: this.id ?? '',
-      title: this.room?.title ?? '',
-      description: this.room?.description ?? '',
-    });
+    this.user.rooms[this.id] = await {
+      'id': this.id ?? '',
+      'title': this.room?.title ?? '',
+      'description': this.room?.description ?? '',
+    };
 
     await this.navService.updateUser(this.user?.id, this.user);
   }
 
-  async sendValue(point: any) {
-    const docRef = await doc(this.firestore, 'rooms', this.id);
+  async removeRoom() {
+    this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), deleteField());
 
-    await updateDoc(docRef, new FieldPath('users', this.user?.id, 'value'), point?.value);
-    await updateDoc(docRef, new FieldPath('users', this.user?.id, 'selected'), true);
+    this.navService.editFirebaseUserFild(this.user?.id, new FieldPath('rooms', this.id), deleteField());
+
+    this.userConfig = null;
+  }
+
+  async deleteRoom() {
+    const users = await Object.keys(this.room?.users);
+
+    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
+      await this.navService.editFirebaseUserFild(users[indexUserId], new FieldPath('rooms', this.id), deleteField());
+    }
+
+    await this.roomService.removeFirebaseRoom(this.id);
   }
 }

@@ -1,9 +1,4 @@
-<!-- <p>room-view works!</p>
-<p>{{ id }}</p>
-<p>{{ room?.id }}</p>
-<p>{{ room?.title }}</p> -->
 <div>
-    <!-- <div class="container d-flex justify-content-sm-around align-items-center overflow-auto" style="height: 750px;">rem -->
     <div class="container d-flex justify-content-sm-around align-items-center overflow-auto" style="height: 30rem;">
         @for (item of users; track $index) {
             <div class="text-center d-flex flex-column align-items-center">
@@ -22,20 +17,26 @@
 
 <footer class="bg-light text-center fixed-bottom">
     <div class="container p-3">
-        <!-- @if (user?.isAdm) { -->
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="show()">
+        @if (userConfig?.isAdm) {
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="showCards()">
                 <i [ngClass]="!(room?.isVisible) ? 'far fa-eye' : 'far fa-eye-slash'" class=""></i>
             </button>
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="reset()">
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="resetCards()">
                 <i class="fas fa-redo"></i>
             </button>
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="deleteRoom()">
+                <i class="fas fa-trash"></i>
+            </button>
+        }
+        @if (userConfig == null && !userConfig?.isAdm) {
             <button class="btn btn-outline-success rounded-circle mx-1" (click)="saveRoom()">
                 <i class="far fa-star"></i>
             </button>
-            <!-- <button class="btn btn-outline-success rounded-circle mx-1">
+        } @else if (!userConfig?.isAdm) {
+            <button class="btn btn-outline-success rounded-circle mx-1" (click)="removeRoom()">
                 <i class="fas fa-star"></i>
-            </button> -->
-        <!-- } -->
+            </button>
+        }
     </div>
     <div class="p-3 overflow-auto">
         <div class="container text-center d-flex justify-content-md-between">

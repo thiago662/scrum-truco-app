@@ -14,6 +14,16 @@ export class RoomComponent {
   ) { }
 
   async ngOnInit() {
-    this.rooms = await this.navService.getUsersRooms();
+    var roomsObject: any[] = await this.navService.getUsersRooms();
+
+    const rooms: any[] = await Object.keys(roomsObject);
+
+    let arrayUsers: any[] = await [];
+
+    for (let indexUserId = 0; indexUserId < rooms.length; indexUserId++) {
+      arrayUsers.push(roomsObject[rooms[indexUserId]]);
+    }
+
+    this.rooms = await arrayUsers;
   }
 }

@@ -76,12 +76,19 @@ export class RoomAddComponent {
     this.getUser();
   }
 
+  async getUser() {
+    var user: any = await this.navService.getUser();
+
+    this.user = await user;
+  }
+
   async createRoom() {
     var roomForm = await this.roomForm.value;
 
     var room: any = await {
       title: roomForm?.title ?? '',
       description: roomForm?.description ?? '',
+      points: this.points,
       isVisible: false,
       users: {},
     };
@@ -103,18 +110,12 @@ export class RoomAddComponent {
   async updateUser(room: any) {
     var user: any = await this.navService.getUser();
 
-    await user.rooms.push({
-      id: room?.id ?? '',
-      title: room?.title ?? '',
-      description: room?.description ?? '',
-    });
+    user.rooms[room?.id] = await {
+      'id': room?.id ?? '',
+      'title': room?.title ?? '',
+      'description': room?.description ?? '',
+    };
 
     await this.navService.updateUser(user?.id, user);
-  }
-
-  async getUser() {
-    var user: any = await this.navService.getUser();
-
-    this.user = await user;
   }
 }

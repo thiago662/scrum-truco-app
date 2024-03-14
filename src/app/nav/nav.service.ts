@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collectionData, updateDoc, addDoc, doc, collection, getDoc, getDocs, query, deleteDoc } from '@angular/fire/firestore';
+import { Firestore, collectionData, updateDoc, addDoc, doc, collection, getDoc, getDocs, query, deleteDoc, FieldPath, deleteField } from '@angular/fire/firestore';
 import { QueryConstraint, where } from 'firebase/firestore';
 import { User } from '../model/user.model';
 
@@ -51,6 +51,30 @@ export class NavService {
     await this.removeLocalStoregeUser();
   }
 
+  async loginUser(email: any, password: any) {
+    var userFirebase = await this.queryLoginFirebaseUser(email, password);
+
+    await this.setLocalStoregeUser(userFirebase);
+
+    return await userFirebase;
+  }
+
+  async checkLoginUser() {
+    var userLocal = await this.getLocalStoregeUser();
+
+    if (userLocal == null) {
+      return await false;
+    }
+
+    var userFirebase = await this.getFirebaseUser(userLocal?.id);
+
+    if (userFirebase == null) {
+      return await false;
+    }
+
+    return await true;
+  }
+
   async getFirebaseUser(id: any) {
     const docRef = await doc(this.firestore, 'users', id);
 
@@ -95,41 +119,19 @@ export class NavService {
     return await user;
   }
 
+  async editFirebaseUserFild(id: any, field: any|FieldPath, value: any) {
+    const docRef = await doc(this.firestore, 'users', id);
+
+    await updateDoc(docRef, field, value);
+  }
+
   async removeFirebaseUser(id: any) {
     const docRef = await doc(this.firestore, 'users', id);
 
     await deleteDoc(docRef);
   }
 
-  async getLocalStoregeUser() {
-    var user: any = await JSON.parse(localStorage.getItem('user') ?? '') ?? null;
-
-    return await user;
-  }
-
-  async setLocalStoregeUser(user: any) {
-    localStorage.setItem('user', JSON.stringify(user));
-  }
-
-  async removeLocalStoregeUser() {
-    localStorage.removeItem('user');
-  }
-
-  async getUsersRooms() {
-    var user: any = await this.getUser();
-
-    return await user?.rooms ?? [];
-  }
-
-  async loginUser(email: any, password: any) {
-    var userFireBase = await this.queryLoginUser(email, password);
-
-    await this.setLocalStoregeUser(userFireBase);
-
-    return await userFireBase;
-  }
-
-  async queryLoginUser(email: any, password: any) {
+  async queryLoginFirebaseUser(email: any, password: any) {
     const ref = await collection(this.firestore, 'users');
 
     const wa:QueryConstraint[] = await [
@@ -164,7 +166,7 @@ export class NavService {
     }
   }
 
-  async checkEmailExist(email: any) {
+  async checkEmailExistFirebase(email: any) {
     const ref = await collection(this.firestore, 'users');
 
     const refq = await query(ref,where('email', '==', email));
@@ -176,5 +178,25 @@ export class NavService {
     (await querySnapshot).forEach((element) => { countUser++; });
 
     return countUser > 0;
+  }
+
+  async getLocalStoregeUser() {
+    var user: any = await JSON.parse(localStorage.getItem('user') ?? '') ?? null;
+
+    return await user;
+  }
+
+  async setLocalStoregeUser(user: any) {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
+
+  async removeLocalStoregeUser() {
+    localStorage.removeItem('user');
+  }
+
+  async getUsersRooms() {
+    var user: any = await this.getUser();
+
+    return await user?.rooms ?? [];
   }
 }

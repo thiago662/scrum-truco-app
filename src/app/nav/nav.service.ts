@@ -181,17 +181,25 @@ export class NavService {
   }
 
   async getLocalStoregeUser() {
-    var user: any = await JSON.parse(localStorage.getItem('user') ?? '') ?? null;
-
-    return await user;
+    if (typeof window !== 'undefined') {
+      var user: any = await JSON.parse(localStorage.getItem('user') ?? '') ?? null;
+  
+      return await user;
+    } else {
+      return await null;
+    }
   }
 
   async setLocalStoregeUser(user: any) {
-    localStorage.setItem('user', JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user', JSON.stringify(user));
+    }
   }
 
   async removeLocalStoregeUser() {
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+    }
   }
 
   async getUsersRooms() {

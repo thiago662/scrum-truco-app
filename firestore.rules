@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function room(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+    }
+
+    function isOwner(roomData) {
+      return isSignedIn() && request.auth.uid == roomData.ownerId;
+    }
+
+    function isController(roomData) {
+      return isSignedIn() && request.auth.uid == roomData.controllerId;
+    }
+
+    function isFacilitator(roomData) {
+      return isOwner(roomData) || isController(roomData);
+    }
+
+    function isApprovedMember(roomData) {
+      return isSignedIn()
+        && roomData.members[request.auth.uid] != null
+        && roomData.members[request.auth.uid].status == 'approved';
+    }
+
+    function onlyChangedKeys(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+
+      match /rooms/{roomId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // ---------- pointing types (seed, somente leitura) ----------
+    match /pointingTypes/{typeId} {
+      allow read: if isSignedIn();
+      allow write: if false; // gerido via console/script admin
+    }
+
+    // ---------- rooms ----------
+    match /rooms/{roomId} {
+      allow get: if isSignedIn();
+      allow list: if false; // sem enumeração de salas
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.controllerId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.members.size() == 1
+        && request.resource.data.members[request.auth.uid].status == 'approved'
+        && request.resource.data.members[request.auth.uid].role == 'owner';
+
+      // convidado/usuário pede pra entrar (só adiciona a si mesmo, pending)
+      allow update: if isSignedIn()
+        && onlyChangedKeys(['members'])
+        && !(request.auth.uid in resource.data.members)
+        && request.resource.data.members[request.auth.uid].status == 'pending'
+        && request.resource.data.members[request.auth.uid].role == 'member'
+        && request.resource.data.members.diff(resource.data.members)
+             .affectedKeys().hasOnly([request.auth.uid]);
+
+      // dono aprova/rejeita/remove membro
+      allow update: if isOwner(resource.data) && onlyChangedKeys(['members']);
+
+      // dono encerra a sala
+      allow update: if isOwner(resource.data) && onlyChangedKeys(['status']);
+
+      // dono elege/troca o controlador (só pra alguém já aprovado)
+      allow update: if isOwner(resource.data)
+        && onlyChangedKeys(['controllerId'])
+        && resource.data.members[request.resource.data.controllerId].status == 'approved';
+
+      // controlador (ou dono) aponta a rodada ativa
+      allow update: if isFacilitator(resource.data)
+        && onlyChangedKeys(['currentRoundId', 'lastActivityAt'])
+        && resource.data.status == 'open';
+
+      allow delete: if isOwner(resource.data);
+    }
+
+    // ---------- rounds ----------
+    match /rooms/{roomId}/rounds/{roundId} {
+      allow read: if isApprovedMember(room(roomId));
+
+      allow create: if isFacilitator(room(roomId))
+        && request.resource.data.revealed == false
+        && request.resource.data.startedBy == request.auth.uid;
+
+      // revelar: só facilitador, só false -> true, e só esses campos
+      allow update: if isFacilitator(room(roomId))
+        && onlyChangedKeys(['revealed', 'revealedAt', 'revealedBy'])
+        && resource.data.revealed == false
+        && request.resource.data.revealed == true;
+
+      // "eu já votei" — qualquer aprovado marca a própria chave, sem revelar valor
+      allow update: if isApprovedMember(room(roomId))
+        && onlyChangedKeys(['voters'])
+        && resource.data.revealed == false
+        && request.resource.data.voters.diff(resource.data.voters)
+             .affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.voters[request.auth.uid] == true;
+
+      match /votes/{uid} {
+        function roundData() {
+          return get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(roundId)).data;
+        }
+
+        allow read: if isSignedIn() && (
+          request.auth.uid == uid ||
+          (roundData().revealed == true && isApprovedMember(room(roomId)))
+        );
+
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && isApprovedMember(room(roomId))
+          && roundData().revealed == false;
+
+        allow delete: if false;
+      }
+    }
+  }
+}

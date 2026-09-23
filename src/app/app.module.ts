@@ -18,6 +18,7 @@ import { RoomViewComponent } from './room/room-view/room-view.component';
 import { RoomSearchComponent } from './room/room-search/room-search.component';
 import { RoomAddComponent } from './room/room-add/room-add.component';
 import { PointingTypePickerComponent } from './room/pointing-type-picker/pointing-type-picker.component';
+import { RoundControlComponent } from './room/round-control/round-control.component';
 
 @NgModule({
   declarations: [
@@ -29,6 +30,7 @@ import { PointingTypePickerComponent } from './room/pointing-type-picker/pointin
     RoomSearchComponent,
     RoomAddComponent,
     PointingTypePickerComponent,
+    RoundControlComponent,
   ],
   imports: [
     BrowserModule,

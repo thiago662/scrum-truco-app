@@ -19,12 +19,50 @@
     } @else if (myMember?.status === 'pending') {
         <div class="alert alert-info">Aguardando o dono da sala aprovar sua entrada...</div>
     } @else if (myMember?.status === 'approved') {
+        @if (round) {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-1 text-body-secondary">{{ round.revealed ? 'Votos revelados' : 'Em votação' }}</h6>
+                    <p class="card-text fs-5 mb-0" id="roundTitle">{{ round.text }}</p>
+                </div>
+            </div>
+
+            @if (canVote) {
+                <div class="d-flex flex-wrap gap-2 mb-3" id="deck">
+                    @for (option of round.pointingType.options; track option.label) {
+                        <button type="button" class="btn" [class.btn-dark]="myVote?.value === option.label" [class.btn-outline-dark]="myVote?.value !== option.label" (click)="vote(option.label)">{{ option.label }}</button>
+                    }
+                </div>
+            }
+
+            @if (round.revealed) {
+                @if (votesLoaded) {
+                    <div class="alert alert-info" id="results">
+                        Média: <strong>{{ averageText }}</strong> · Aproximada: <strong>{{ approximateLabel }}</strong>
+                    </div>
+                } @else {
+                    <div class="alert alert-light">Carregando votos...</div>
+                }
+            }
+        } @else {
+            <p class="text-body-secondary">Nenhuma rodada em andamento.</p>
+        }
+
         <h5>Participantes</h5>
-        <ul class="list-group mb-3">
+        <ul class="list-group mb-3" id="participants">
             @for (member of approvedMembers; track member.uid) {
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     {{ member.name }}
                     <span>
+                        @if (round) {
+                            @if (round.revealed) {
+                                <span class="badge text-bg-dark me-1">{{ votesLoaded ? voteLabel(member.uid) : '…' }}</span>
+                            } @else if (hasVoted(member.uid)) {
+                                <span class="badge text-bg-success me-1">votou</span>
+                            } @else {
+                                <span class="badge text-bg-light border me-1">aguardando</span>
+                            }
+                        }
                         @if (member.uid === room?.controllerId) {
                             <span class="badge bg-primary me-1">Controlador</span>
                         }
@@ -38,6 +76,13 @@
                 </li>
             }
         </ul>
+
+        @if (isFacilitator) {
+            @if (round && !round.revealed) {
+                <button type="button" class="btn btn-success mb-3" (click)="revealRound()">Revelar votos</button>
+            }
+            <app-round-control [busy]="startingRound" (start)="startRound($event)"></app-round-control>
+        }
 
         @if (isOwner && room?.status === 'open') {
             @if (pendingMembers.length > 0) {

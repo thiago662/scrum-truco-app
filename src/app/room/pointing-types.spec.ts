@@ -1,4 +1,4 @@
-import { POINTING_TYPES, averageWeight, nearestOption } from './pointing-types';
+import { POINTING_TYPES, averageWeight, nearestOption, weightOf } from './pointing-types';
 
 const type = (id: string) => POINTING_TYPES.find((t) => t.id === id)!;
 
@@ -22,6 +22,12 @@ describe('pointing-types', () => {
   it('nearestOption ignora opções sem peso e devolve null se não houver nenhuma', () => {
     expect(nearestOption(1, [{ label: '?', weight: null }])).toBeNull();
     expect(nearestOption(100, type('fibonacci').options)?.label).toBe('89');
+  });
+
+  it('weightOf busca o peso pelo rótulo e ignora rótulo fora da escala', () => {
+    expect(weightOf('8', type('fibonacci').options)).toBe(8);
+    expect(weightOf('?', type('fibonacci').options)).toBeNull();
+    expect(weightOf('999', type('fibonacci').options)).toBeNull();
   });
 
   it('todo tipo pré-definido tem id único e ao menos 2 opções com peso', () => {

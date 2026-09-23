@@ -25,6 +25,10 @@ export const POINTING_TYPES: PointingType[] = [
     },
 ];
 
+export function weightOf(label: string, options: PointingOption[]): number | null {
+    return options.find((option) => option.label === label)?.weight ?? null;
+}
+
 export function averageWeight(weights: (number | null)[]): number | null {
     const numeric = weights.filter((weight): weight is number => weight != null);
 

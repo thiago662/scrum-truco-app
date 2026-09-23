@@ -7,6 +7,8 @@ import { provideAuth, getAuth } from '@angular/fire/auth';
 import { environment } from '../../../environments/environment';
 
 import { RoomViewComponent } from './room-view.component';
+import { RoundControlComponent } from '../round-control/round-control.component';
+import { PointingTypePickerComponent } from '../pointing-type-picker/pointing-type-picker.component';
 
 describe('RoomViewComponent', () => {
   let component: RoomViewComponent;
@@ -14,7 +16,7 @@ describe('RoomViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [RoomViewComponent],
+      declarations: [RoomViewComponent, RoundControlComponent, PointingTypePickerComponent],
       imports: [RouterTestingModule, FormsModule],
       providers: [
         provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),

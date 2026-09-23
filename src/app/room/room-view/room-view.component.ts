@@ -1,10 +1,15 @@
-import { Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, ViewChild, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Unsubscribe } from '@angular/fire/firestore';
 import { RoomService } from '../room.service';
+import { RoundService } from '../round.service';
 import { AuthService } from '../../auth/auth.service';
 import { Room, RoomMember } from '../../model/room.model';
+import { Round, Vote } from '../../model/round.model';
+import { PointingOption, PointingType } from '../../model/pointing-type.model';
+import { averageWeight, nearestOption, weightOf } from '../pointing-types';
+import { RoundControlComponent } from '../round-control/round-control.component';
 
 type MemberRow = RoomMember & { uid: string };
 
@@ -21,14 +26,26 @@ export class RoomViewComponent implements OnInit, OnDestroy {
   joinName = '';
   errorMessage = '';
 
+  round: Round | undefined;
+  myVote: Vote | undefined;
+  votes: { [uid: string]: Vote } | undefined;
+  startingRound = false;
+
+  @ViewChild(RoundControlComponent) roundControl?: RoundControlComponent;
+
   private unsub?: Unsubscribe;
   private indexState?: string;
+  private watchedRoundId: string | null = null;
+  private roundUnsubs: Unsubscribe[] = [];
+  private votesUnsub?: Unsubscribe;
+  private votesRetries = 0;
   private platformId = inject(PLATFORM_ID);
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private roomService: RoomService,
+    private roundService: RoundService,
     private authService: AuthService,
   ) {
     this.id = this.route.snapshot.params['id'];
@@ -64,6 +81,7 @@ export class RoomViewComponent implements OnInit, OnDestroy {
       }));
 
       this.syncUserIndex();
+      this.syncRound();
     });
   }
 
@@ -89,12 +107,76 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Só membros aprovados leem a rodada (rules). Os votos dos outros só são assinados
+  // depois de revelada — antes disso as rules negam, e o valor nem chega ao navegador.
+  private syncRound() {
+    const roundId = this.myMember?.status === 'approved' ? this.room?.currentRoundId ?? null : null;
+
+    if (roundId === this.watchedRoundId || this.userId == null) {
+      return;
+    }
+
+    this.stopRoundListeners();
+    this.watchedRoundId = roundId;
+
+    if (roundId == null) {
+      return;
+    }
+
+    this.roundUnsubs.push(
+      this.roundService.listenRound(this.id, roundId, (round, hasPendingWrites) => {
+        this.round = round;
+
+        if (!hasPendingWrites) {
+          this.syncVotes(roundId);
+        }
+      }),
+      this.roundService.listenMyVote(this.id, roundId, this.userId, (vote) => this.myVote = vote),
+    );
+  }
+
+  private syncVotes(roundId: string) {
+    if (!this.round?.revealed || this.votesUnsub) {
+      return;
+    }
+
+    this.votesUnsub = this.roundService.listenVotes(this.id, roundId, (votes) => this.votes = votes, () => {
+      this.votesUnsub = undefined;
+
+      if (this.watchedRoundId === roundId && this.votesRetries++ < 3) {
+        setTimeout(() => this.syncVotes(roundId), 1500);
+      }
+    });
+  }
+
+  private stopRoundListeners() {
+    this.roundUnsubs.forEach((unsub) => unsub());
+    this.roundUnsubs = [];
+    this.votesUnsub?.();
+    this.votesUnsub = undefined;
+    this.votesRetries = 0;
+    this.round = undefined;
+    this.myVote = undefined;
+    this.votes = undefined;
+  }
+
   ngOnDestroy() {
     this.unsub?.();
+    this.stopRoundListeners();
+    this.watchedRoundId = null;
   }
 
   get isOwner(): boolean {
     return this.userId != null && this.userId === this.room?.ownerId;
+  }
+
+  get isFacilitator(): boolean {
+    return this.room?.status === 'open' && this.userId != null
+      && (this.userId === this.room.ownerId || this.userId === this.room.controllerId);
+  }
+
+  get canVote(): boolean {
+    return this.room?.status === 'open' && this.round != null && !this.round.revealed;
   }
 
   get myMember(): MemberRow | undefined {
@@ -109,13 +191,47 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     return this.members.filter((member) => member.status === 'pending');
   }
 
-  private async attempt(action: () => Promise<void>, message: string) {
+  get votesLoaded(): boolean {
+    return this.votes != undefined;
+  }
+
+  hasVoted(uid: string): boolean {
+    return this.round?.voters?.[uid] === true;
+  }
+
+  voteLabel(uid: string): string {
+    return this.votes?.[uid]?.value ?? '—';
+  }
+
+  private get options(): PointingOption[] {
+    return this.round?.pointingType.options ?? [];
+  }
+
+  get average(): number | null {
+    if (this.votes == undefined) {
+      return null;
+    }
+
+    return averageWeight(Object.values(this.votes).map((vote) => weightOf(vote.value, this.options)));
+  }
+
+  get averageText(): string {
+    return this.average == null ? '—' : String(Math.round(this.average * 100) / 100);
+  }
+
+  get approximateLabel(): string {
+    return this.average == null ? '—' : nearestOption(this.average, this.options)?.label ?? '—';
+  }
+
+  private async attempt(action: () => Promise<unknown>, message: string): Promise<boolean> {
     this.errorMessage = '';
 
     try {
       await action();
+      return true;
     } catch {
       this.errorMessage = message;
+      return false;
     }
   }
 
@@ -143,5 +259,37 @@ export class RoomViewComponent implements OnInit, OnDestroy {
 
   async closeRoom() {
     await this.attempt(() => this.roomService.closeRoom(this.id), 'Não foi possível encerrar a sala.');
+  }
+
+  async startRound(event: { text: string; pointingType: PointingType }) {
+    if (this.userId == null || this.startingRound) {
+      return;
+    }
+
+    this.startingRound = true;
+
+    const started = await this.attempt(() => this.roundService.startRound(this.id, this.userId!, event.text, event.pointingType), 'Não foi possível iniciar a rodada.');
+
+    if (started) {
+      this.roundControl?.reset();
+    }
+
+    this.startingRound = false;
+  }
+
+  async vote(label: string) {
+    if (!this.canVote || this.round?.id == null || this.userId == null) {
+      return;
+    }
+
+    await this.attempt(() => this.roundService.castVote(this.id, this.round!.id!, this.userId!, label, this.hasVoted(this.userId!)), 'Não foi possível registrar o voto.');
+  }
+
+  async revealRound() {
+    if (this.round?.id == null || this.userId == null) {
+      return;
+    }
+
+    await this.attempt(() => this.roundService.revealRound(this.id, this.round!.id!, this.userId!), 'Não foi possível revelar os votos.');
   }
 }

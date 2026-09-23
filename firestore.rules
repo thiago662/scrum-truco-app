@@ -52,7 +52,9 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if false; // sem enumeração de salas
 
+      // só conta cadastrada cria sala: convidado anônimo pode entrar em salas, não criar (evita spam de salas)
       allow create: if isSignedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.controllerId == request.auth.uid
         && request.resource.data.status == 'open'

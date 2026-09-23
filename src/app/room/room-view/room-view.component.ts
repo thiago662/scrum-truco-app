@@ -30,6 +30,7 @@ export class RoomViewComponent implements OnInit, OnDestroy {
   myVote: Vote | undefined;
   votes: { [uid: string]: Vote } | undefined;
   startingRound = false;
+  linkCopied = false;
 
   @ViewChild(RoundControlComponent) roundControl?: RoundControlComponent;
 
@@ -243,6 +244,16 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     }
 
     await this.attempt(() => this.roomService.requestJoin(this.id, this.userId!, name), 'Não foi possível pedir entrada na sala.');
+  }
+
+  async copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      this.linkCopied = true;
+      setTimeout(() => this.linkCopied = false, 2000);
+    } catch {
+      this.errorMessage = 'Não foi possível copiar. Copie o endereço do navegador.';
+    }
   }
 
   async approveMember(uid: string) {

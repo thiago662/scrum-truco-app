@@ -9,7 +9,8 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 ## Comandos
 
 - `npm start` / `ng serve` — dev server em http://localhost:4200
-- `ng build` — build de produção, saída em `docs/` (ver `outputPath` em `angular.json`) — **sobrescreve o site publicado**, use `--output-path=<pasta>` pra apenas verificar
+- `ng build` — build com SSR/prerender em `dist/scrum-truco-app` (`browser/` + `server/`); serve pra checar o prerender, **não** pra publicar
+- `npm run build:pages` — build sem SSR (target `pages`, `baseHref=/scrum-truco-app/`) e troca o conteúdo de `docs/` (GitHub Pages), gerando `404.html` a partir do `index.html`. O `404.html` é o que faz o link `/rooms/:id` funcionar: o Pages não conhece a rota, cai no 404 e o Angular assume. Única forma que escreve em `docs/`; revisar o `git diff` antes de commitar. O target `pages` duplica as opções de `build` em `angular.json` (esta versão do Angular não deixa desligar `server` por configuração): ao mudar assets/styles/budgets num, espelhar no outro
 - `ng test --watch=false --browsers=ChromeHeadless` — testes Karma/Jasmine (`--include='**/x.spec.ts'` roda um só)
 - `npx tsc -p tsconfig.app.json --noEmit` — checagem de tipos rápida (o `ng build` só pega erro de template)
 - `npm run emulators` — Firestore + Auth Emulator locais (exige Java no PATH)

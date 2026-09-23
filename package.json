@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:pages": "ng run scrum-truco-app:pages && node scripts/publish-docs.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:scrum-truco-app": "node dist/scrum-truco-app/server/server.mjs",

@@ -34,4 +34,16 @@ describe('RoomViewComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('copyLink copia o endereço atual e sinaliza; se o clipboard falhar, avisa', async () => {
+    const writeText = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+
+    await component.copyLink();
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(component.linkCopied).toBeTrue();
+
+    writeText.and.rejectWith(new Error('negado'));
+    await component.copyLink();
+    expect(component.errorMessage).toContain('Copie o endereço');
+  });
 });

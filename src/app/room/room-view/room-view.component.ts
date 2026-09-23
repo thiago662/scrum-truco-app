@@ -18,8 +18,11 @@ export class RoomViewComponent implements OnInit, OnDestroy {
   room: Room | undefined;
   userId: string | undefined;
   members: MemberRow[] = [];
+  joinName = '';
+  errorMessage = '';
 
   private unsub?: Unsubscribe;
+  private indexState?: string;
   private platformId = inject(PLATFORM_ID);
 
   constructor(
@@ -38,8 +41,14 @@ export class RoomViewComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const user = await this.authService.getCurrentUser();
-    this.userId = user?.id;
+    try {
+      const user = (await this.authService.getCurrentUser()) ?? (await this.authService.loginAsGuest());
+      this.userId = user.id;
+      this.joinName = user.name ?? '';
+    } catch {
+      this.errorMessage = 'Não foi possível entrar como convidado.';
+      return;
+    }
 
     this.unsub = this.roomService.listenRoom(this.id, (room) => {
       this.room = room;
@@ -53,7 +62,31 @@ export class RoomViewComponent implements OnInit, OnDestroy {
         uid,
         ...room.members![uid],
       }));
+
+      this.syncUserIndex();
     });
+  }
+
+  // users/{uid}/rooms é só cache de "minhas salas": só escrito pelo próprio usuário (rules),
+  // então o vínculo é criado ao ser aprovado e removido ao perder a vaga.
+  private async syncUserIndex() {
+    const state = this.myMember?.status ?? 'none';
+
+    if (this.userId == null || state === this.indexState || state === 'pending') {
+      return;
+    }
+
+    this.indexState = state;
+
+    try {
+      if (state === 'approved') {
+        await this.roomService.addToUserIndex(this.userId, this.id, this.room?.title ?? '');
+      } else {
+        await this.roomService.removeFromUserIndex(this.userId, this.id);
+      }
+    } catch {
+      this.indexState = undefined;
+    }
   }
 
   ngOnDestroy() {
@@ -64,15 +97,51 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     return this.userId != null && this.userId === this.room?.ownerId;
   }
 
+  get myMember(): MemberRow | undefined {
+    return this.members.find((member) => member.uid === this.userId);
+  }
+
   get approvedMembers(): MemberRow[] {
     return this.members.filter((member) => member.status === 'approved');
   }
 
+  get pendingMembers(): MemberRow[] {
+    return this.members.filter((member) => member.status === 'pending');
+  }
+
+  private async attempt(action: () => Promise<void>, message: string) {
+    this.errorMessage = '';
+
+    try {
+      await action();
+    } catch {
+      this.errorMessage = message;
+    }
+  }
+
+  async requestJoin() {
+    const name = this.joinName.trim();
+
+    if (this.userId == null || name === '') {
+      return;
+    }
+
+    await this.attempt(() => this.roomService.requestJoin(this.id, this.userId!, name), 'Não foi possível pedir entrada na sala.');
+  }
+
+  async approveMember(uid: string) {
+    await this.attempt(() => this.roomService.approveMember(this.id, uid), 'Não foi possível aprovar o participante.');
+  }
+
+  async removeMember(uid: string) {
+    await this.attempt(() => this.roomService.removeMember(this.id, uid), 'Não foi possível remover o participante.');
+  }
+
   async changeController(controllerId: string) {
-    await this.roomService.updateControllerId(this.id, controllerId);
+    await this.attempt(() => this.roomService.updateControllerId(this.id, controllerId), 'Não foi possível trocar o controlador.');
   }
 
   async closeRoom() {
-    await this.roomService.closeRoom(this.id);
+    await this.attempt(() => this.roomService.closeRoom(this.id), 'Não foi possível encerrar a sala.');
   }
 }

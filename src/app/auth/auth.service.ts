@@ -21,7 +21,7 @@ export class AuthService {
     }
 
     if (firebaseUser.isAnonymous) {
-      return new User(firebaseUser.uid, firebaseUser.displayName ?? '', '', '');
+      return new User(firebaseUser.uid, firebaseUser.displayName ?? '', '', '', true);
     }
 
     const docRef = doc(this.firestore, 'users', firebaseUser.uid);
@@ -52,8 +52,10 @@ export class AuthService {
     await signInWithEmailAndPassword(this.auth, email, password);
   }
 
-  async loginAsGuest(): Promise<void> {
-    await signInAnonymously(this.auth);
+  async loginAsGuest(): Promise<User> {
+    const credential = await signInAnonymously(this.auth);
+
+    return new User(credential.user.uid, '', '', '', true);
   }
 
   async logout(): Promise<void> {

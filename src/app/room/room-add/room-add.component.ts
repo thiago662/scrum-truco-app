@@ -26,7 +26,7 @@ export class RoomAddComponent {
   async createRoom() {
     var user = await this.authService.getCurrentUser();
 
-    if (user?.id == null) {
+    if (user?.id == null || user.isGuest) {
       return;
     }
 

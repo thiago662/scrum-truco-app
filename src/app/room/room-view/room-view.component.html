@@ -1,4 +1,8 @@
 <div class="container">
+    @if (errorMessage) {
+        <div class="alert alert-danger">{{ errorMessage }}</div>
+    }
+
     <h3>{{ room?.title }}</h3>
     <p>{{ room?.description }}</p>
 
@@ -6,32 +10,60 @@
         <div class="alert alert-secondary">Essa sala foi encerrada.</div>
     }
 
-    <h5>Participantes</h5>
-    <ul class="list-group mb-3">
-        @for (member of members; track member.uid) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ member.name }}
-                <span>
-                    @if (member.uid === room?.controllerId) {
-                        <span class="badge bg-primary me-1">Controlador</span>
-                    }
-                    @if (member.role === 'owner') {
-                        <span class="badge bg-secondary">Dono</span>
-                    }
-                </span>
-            </li>
-        }
-    </ul>
-
-    @if (isOwner && room?.status === 'open') {
+    @if (room && !myMember && room.status === 'open') {
         <div class="mb-3">
-            <label for="controllerId" class="form-label">Controlador da sala</label>
-            <select id="controllerId" class="form-select" [ngModel]="room?.controllerId" (ngModelChange)="changeController($event)">
-                @for (member of approvedMembers; track member.uid) {
-                    <option [value]="member.uid">{{ member.name }}</option>
-                }
-            </select>
+            <label for="joinName" class="form-label">Seu nome na sala</label>
+            <input type="text" class="form-control mb-2" id="joinName" [(ngModel)]="joinName">
+            <button type="button" class="btn btn-primary" (click)="requestJoin()">Pedir entrada</button>
         </div>
-        <button type="button" class="btn btn-outline-danger" (click)="closeRoom()">Encerrar sala</button>
+    } @else if (myMember?.status === 'pending') {
+        <div class="alert alert-info">Aguardando o dono da sala aprovar sua entrada...</div>
+    } @else if (myMember?.status === 'approved') {
+        <h5>Participantes</h5>
+        <ul class="list-group mb-3">
+            @for (member of approvedMembers; track member.uid) {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ member.name }}
+                    <span>
+                        @if (member.uid === room?.controllerId) {
+                            <span class="badge bg-primary me-1">Controlador</span>
+                        }
+                        @if (member.role === 'owner') {
+                            <span class="badge bg-secondary">Dono</span>
+                        }
+                        @if (isOwner && member.role !== 'owner' && member.uid !== room?.controllerId) {
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeMember(member.uid)">Remover</button>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+
+        @if (isOwner && room?.status === 'open') {
+            @if (pendingMembers.length > 0) {
+                <h5>Pedidos de entrada</h5>
+                <ul class="list-group mb-3">
+                    @for (member of pendingMembers; track member.uid) {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ member.name }}
+                            <span>
+                                <button type="button" class="btn btn-sm btn-success me-1" (click)="approveMember(member.uid)">Aprovar</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeMember(member.uid)">Rejeitar</button>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="mb-3">
+                <label for="controllerId" class="form-label">Controlador da sala</label>
+                <select id="controllerId" class="form-select" [ngModel]="room?.controllerId" (ngModelChange)="changeController($event)">
+                    @for (member of approvedMembers; track member.uid) {
+                        <option [value]="member.uid">{{ member.name }}</option>
+                    }
+                </select>
+            </div>
+            <button type="button" class="btn btn-outline-danger" (click)="closeRoom()">Encerrar sala</button>
+        }
     }
 </div>

@@ -40,11 +40,11 @@ export class NavComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.userSub = this.authService.currentUser$.subscribe((user) => {
-      this.isLogged = user != null;
+      this.isLogged = user != null && !user.isGuest;
 
       this.userForm.patchValue({
         id: user?.id ?? '',
-        name: user?.name ?? '',
+        name: user?.isGuest ? '' : user?.name ?? '',
         companyName: user?.companyName ?? '',
         email: user?.email ?? '',
         password: '',

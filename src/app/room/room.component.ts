@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { RoomService } from './room.service';
 import { AuthService } from '../auth/auth.service';
+import { RoomIndexEntry } from '../model/room.model';
 
 @Component({
   selector: 'app-room',
@@ -10,7 +11,7 @@ import { AuthService } from '../auth/auth.service';
   styleUrl: './room.component.scss'
 })
 export class RoomComponent implements OnInit, OnDestroy {
-  rooms: any[] = [];
+  rooms: RoomIndexEntry[] = [];
 
   private roomsSub?: Subscription;
   private platformId = inject(PLATFORM_ID);

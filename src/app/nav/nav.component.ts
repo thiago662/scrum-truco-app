@@ -25,7 +25,7 @@ export class NavComponent implements OnInit, OnDestroy {
     password: new FormControl(''),
   });
   isLogged = false;
-  mode: any;
+  mode: 'login' | 'create' | '' = '';
   errorMessage = '';
 
   private userSub?: Subscription;
@@ -70,12 +70,12 @@ export class NavComponent implements OnInit, OnDestroy {
     return this.offcanvasService.hasOpenOffcanvas() ?? false;
   }
 
-  open(content: any) {
+  open(content: TemplateRef<unknown>) {
     this.errorMessage = '';
     this.modalService.open(content);
   }
 
-  selectedMode(mode: any) {
+  selectedMode(mode: 'login' | 'create') {
     this.errorMessage = '';
     this.mode = mode;
   }

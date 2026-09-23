@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, authState, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut } from '@angular/fire/auth';
+import { Auth, User as FirebaseUser, authState, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp } from '@angular/fire/firestore';
 import { Observable, switchMap, firstValueFrom } from 'rxjs';
 import { User } from '../model/user.model';
@@ -15,7 +15,7 @@ export class AuthService {
     switchMap((firebaseUser) => this.toUser(firebaseUser))
   );
 
-  private async toUser(firebaseUser: any): Promise<User | null> {
+  private async toUser(firebaseUser: FirebaseUser | null): Promise<User | null> {
     if (firebaseUser == null) {
       return null;
     }
@@ -26,9 +26,9 @@ export class AuthService {
 
     const docRef = doc(this.firestore, 'users', firebaseUser.uid);
     const docSnap = await getDoc(docRef);
-    const data: any = docSnap.data() ?? {};
+    const data = docSnap.data() ?? {};
 
-    return new User(firebaseUser.uid, data.name ?? '', firebaseUser.email ?? '', data.companyName ?? '');
+    return new User(firebaseUser.uid, data['name'] ?? '', firebaseUser.email ?? '', data['companyName'] ?? '');
   }
 
   async getCurrentUser(): Promise<User | null> {

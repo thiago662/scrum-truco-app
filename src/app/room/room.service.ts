@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { Room } from '../model/room.model';
+import { Room, RoomIndexEntry } from '../model/room.model';
 
 @Injectable({
   providedIn: 'root'
@@ -72,7 +72,7 @@ export class RoomService {
     await deleteDoc(doc(this.firestore, 'users', uid, 'rooms', roomId));
   }
 
-  getUserRooms(uid: string): Observable<any[]> {
-    return collectionData(collection(this.firestore, 'users', uid, 'rooms'), { idField: 'id' });
+  getUserRooms(uid: string): Observable<RoomIndexEntry[]> {
+    return collectionData(collection(this.firestore, 'users', uid, 'rooms'), { idField: 'id' }) as Observable<RoomIndexEntry[]>;
   }
 }

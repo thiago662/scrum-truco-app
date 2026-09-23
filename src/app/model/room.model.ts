@@ -5,6 +5,13 @@ export interface RoomMember {
     joinedAt?: any;
 }
 
+// entrada do índice users/{uid}/rooms ("minhas salas")
+export interface RoomIndexEntry {
+    id: string;
+    roomId: string;
+    title: string;
+}
+
 export class Room {
     id?: string;
     title?: string;

@@ -1,3 +1,4 @@
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
@@ -11,6 +12,8 @@ describe('AppComponent', () => {
       declarations: [
         AppComponent
       ],
+      // o <app-nav> real depende de Firebase/Ng-Bootstrap; aqui só interessa o shell do AppComponent
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   });
 

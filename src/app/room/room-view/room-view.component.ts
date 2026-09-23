@@ -1,129 +1,78 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Firestore, collectionData, addDoc, doc, collection, setDoc, getDoc, getDocFromServer, updateDoc, onSnapshot, getDocs, query, DocumentReference, FieldPath, deleteField, arrayRemove, deleteDoc } from '@angular/fire/firestore';
-import { Observable, Subject, map, switchMap } from 'rxjs';
-import { NavService } from '../../nav/nav.service';
+import { Unsubscribe } from '@angular/fire/firestore';
 import { RoomService } from '../room.service';
+import { AuthService } from '../../auth/auth.service';
+import { Room, RoomMember } from '../../model/room.model';
+
+type MemberRow = RoomMember & { uid: string };
 
 @Component({
   selector: 'app-room-view',
   templateUrl: './room-view.component.html',
   styleUrl: './room-view.component.scss'
 })
-export class RoomViewComponent {
-  id: any = null;
-  isVisible: any = true;
-  points: any;
-  room: any;
-  user: any;
-  userConfig: any;
-  users: any;
+export class RoomViewComponent implements OnInit, OnDestroy {
+  id: string;
+  room: Room | undefined;
+  userId: string | undefined;
+  members: MemberRow[] = [];
 
-  firestore: Firestore = inject(Firestore);
+  private unsub?: Unsubscribe;
+  private platformId = inject(PLATFORM_ID);
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private navService: NavService,
     private roomService: RoomService,
+    private authService: AuthService,
   ) {
     this.id = this.route.snapshot.params['id'];
-
-    this.initRoom();
   }
 
-  async initRoom() {
-    await this.getUser();
+  async ngOnInit() {
+    // Firebase Auth/Firestore nunca resolvem durante o prerender SSR (ng build gera as
+    // rotas estáticas) — sem essa guarda, o build trava esperando uma Promise que nunca chega.
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
 
-    await this.getFirebaseRoom(this.id);
-  }
+    const user = await this.authService.getCurrentUser();
+    this.userId = user?.id;
 
-  async getUser() {
-    var user: any = await this.navService.getUser();
+    this.unsub = this.roomService.listenRoom(this.id, (room) => {
+      this.room = room;
 
-    this.user = await user;
-  }
-
-  async getFirebaseRoom(id: any) {
-    const docRef = await doc(this.firestore, 'rooms', id);
-
-    const unsub = await onSnapshot(docRef, (snapshot) => {
-      this.room = snapshot.data();
-
-      if (this.room == undefined) {
+      if (room == undefined) {
         this.router.navigate(['/rooms/']);
+        return;
       }
 
-      this.points = this.room?.points;
-
-      const users = Object.keys(this.room?.users);
-
-      let arrayUsers = [];
-
-      for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-        arrayUsers.push(this.room?.users[users[indexUserId]]);
-
-        if (this.user?.id == users[indexUserId]) {
-          this.userConfig = this.room?.users[users[indexUserId]];
-        }
-      }
-
-      this.users = arrayUsers;
+      this.members = Object.keys(room.members ?? {}).map((uid) => ({
+        uid,
+        ...room.members![uid],
+      }));
     });
   }
 
-  async sendValue(point: any) {
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'value'), point?.value);
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'selected'), true);
+  ngOnDestroy() {
+    this.unsub?.();
   }
 
-  async showCards() {
-    await this.roomService.editFirebaseRoomField(this.id, 'isVisible', !this.room?.isVisible);
+  get isOwner(): boolean {
+    return this.userId != null && this.userId === this.room?.ownerId;
   }
 
-  async resetCards() {
-    const users = await Object.keys(this.room?.users);
-
-    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'value'), '');
-      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'selected'), false);
-    }
-
-    await this.showCards();
+  get approvedMembers(): MemberRow[] {
+    return this.members.filter((member) => member.status === 'approved');
   }
 
-  async saveRoom() {
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), {
-      'id': this.user?.id,
-      'name': this.user?.name,
-      'selected': false,
-      'value': '',
-    });
-
-    this.user.rooms[this.id] = await {
-      'id': this.id ?? '',
-      'title': this.room?.title ?? '',
-      'description': this.room?.description ?? '',
-    };
-
-    await this.navService.updateUser(this.user?.id, this.user);
+  async changeController(controllerId: string) {
+    await this.roomService.updateControllerId(this.id, controllerId);
   }
 
-  async removeRoom() {
-    this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), deleteField());
-
-    this.navService.editFirebaseUserFild(this.user?.id, new FieldPath('rooms', this.id), deleteField());
-
-    this.userConfig = null;
-  }
-
-  async deleteRoom() {
-    const users = await Object.keys(this.room?.users);
-
-    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-      await this.navService.editFirebaseUserFild(users[indexUserId], new FieldPath('rooms', this.id), deleteField());
-    }
-
-    await this.roomService.removeFirebaseRoom(this.id);
+  async closeRoom() {
+    await this.roomService.closeRoom(this.id);
   }
 }

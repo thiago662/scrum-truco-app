@@ -8,6 +8,7 @@
     "build:pages": "ng run scrum-truco-app:pages && node scripts/add-404.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI",
     "serve:ssr:scrum-truco-app": "node dist/scrum-truco-app/server/server.mjs",
     "emulators": "firebase emulators:start --only firestore,auth"
   },

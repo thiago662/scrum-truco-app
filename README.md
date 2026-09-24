@@ -13,7 +13,7 @@ O repositório não traz a config de nenhum projeto Firebase. Para rodar você p
 
 ## Publicação (GitHub Pages via Actions)
 
-O site é buildado e publicado pelo workflow `.github/workflows/deploy-pages.yml` a cada push no `master`. Configuração única no repositório:
+O workflow `.github/workflows/deploy-pages.yml` roda checagem de tipos, testes (`npm run test:ci`) e build em todo PR para o `master`; a cada push no `master`, se tudo passar, ele publica o site. Configuração única no repositório:
 
 1. Settings > Secrets and variables > Actions > **New repository secret**: nome `FIREBASE_CONFIG`, valor o objeto de config copiado do Console, com as chaves `{ ... }` (sem o `const firebaseConfig =`).
 2. Settings > Pages > Build and deployment > Source: **GitHub Actions**.

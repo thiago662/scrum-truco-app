@@ -1,129 +1,306 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, ViewChild, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Firestore, collectionData, addDoc, doc, collection, setDoc, getDoc, getDocFromServer, updateDoc, onSnapshot, getDocs, query, DocumentReference, FieldPath, deleteField, arrayRemove, deleteDoc } from '@angular/fire/firestore';
-import { Observable, Subject, map, switchMap } from 'rxjs';
-import { NavService } from '../../nav/nav.service';
+import { Unsubscribe } from '@angular/fire/firestore';
 import { RoomService } from '../room.service';
+import { RoundService } from '../round.service';
+import { AuthService } from '../../auth/auth.service';
+import { Room, RoomMember } from '../../model/room.model';
+import { Round, Vote } from '../../model/round.model';
+import { PointingOption, PointingType } from '../../model/pointing-type.model';
+import { averageWeight, nearestOption, weightOf } from '../pointing-types';
+import { RoundControlComponent } from '../round-control/round-control.component';
+
+type MemberRow = RoomMember & { uid: string };
 
 @Component({
   selector: 'app-room-view',
   templateUrl: './room-view.component.html',
   styleUrl: './room-view.component.scss'
 })
-export class RoomViewComponent {
-  id: any = null;
-  isVisible: any = true;
-  points: any;
-  room: any;
-  user: any;
-  userConfig: any;
-  users: any;
+export class RoomViewComponent implements OnInit, OnDestroy {
+  id: string;
+  room: Room | undefined;
+  userId: string | undefined;
+  members: MemberRow[] = [];
+  joinName = '';
+  errorMessage = '';
 
-  firestore: Firestore = inject(Firestore);
+  round: Round | undefined;
+  myVote: Vote | undefined;
+  votes: { [uid: string]: Vote } | undefined;
+  startingRound = false;
+  linkCopied = false;
+
+  @ViewChild(RoundControlComponent) roundControl?: RoundControlComponent;
+
+  private unsub?: Unsubscribe;
+  private indexState?: string;
+  private watchedRoundId: string | null = null;
+  private roundUnsubs: Unsubscribe[] = [];
+  private votesUnsub?: Unsubscribe;
+  private votesRetries = 0;
+  private platformId = inject(PLATFORM_ID);
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private navService: NavService,
     private roomService: RoomService,
+    private roundService: RoundService,
+    private authService: AuthService,
   ) {
     this.id = this.route.snapshot.params['id'];
-
-    this.initRoom();
   }
 
-  async initRoom() {
-    await this.getUser();
+  async ngOnInit() {
+    // Firebase Auth/Firestore nunca resolvem durante o prerender SSR (ng build gera as
+    // rotas estáticas) — sem essa guarda, o build trava esperando uma Promise que nunca chega.
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
 
-    await this.getFirebaseRoom(this.id);
-  }
+    try {
+      const user = (await this.authService.getCurrentUser()) ?? (await this.authService.loginAsGuest());
+      this.userId = user.id;
+      this.joinName = user.name ?? '';
+    } catch {
+      this.errorMessage = 'Não foi possível entrar como convidado.';
+      return;
+    }
 
-  async getUser() {
-    var user: any = await this.navService.getUser();
+    this.unsub = this.roomService.listenRoom(this.id, (room) => {
+      this.room = room;
 
-    this.user = await user;
-  }
-
-  async getFirebaseRoom(id: any) {
-    const docRef = await doc(this.firestore, 'rooms', id);
-
-    const unsub = await onSnapshot(docRef, (snapshot) => {
-      this.room = snapshot.data();
-
-      if (this.room == undefined) {
+      if (room == undefined) {
         this.router.navigate(['/rooms/']);
+        return;
       }
 
-      this.points = this.room?.points;
+      this.members = Object.keys(room.members ?? {}).map((uid) => ({
+        uid,
+        ...room.members![uid],
+      }));
 
-      const users = Object.keys(this.room?.users);
+      this.syncUserIndex();
+      this.syncRound();
+    });
+  }
 
-      let arrayUsers = [];
+  // users/{uid}/rooms é só cache de "minhas salas": só escrito pelo próprio usuário (rules),
+  // então o vínculo é criado ao ser aprovado e removido ao perder a vaga.
+  private async syncUserIndex() {
+    const state = this.myMember?.status ?? 'none';
 
-      for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-        arrayUsers.push(this.room?.users[users[indexUserId]]);
+    if (this.userId == null || state === this.indexState || state === 'pending') {
+      return;
+    }
 
-        if (this.user?.id == users[indexUserId]) {
-          this.userConfig = this.room?.users[users[indexUserId]];
+    this.indexState = state;
+
+    try {
+      if (state === 'approved') {
+        await this.roomService.addToUserIndex(this.userId, this.id, this.room?.title ?? '');
+      } else {
+        await this.roomService.removeFromUserIndex(this.userId, this.id);
+      }
+    } catch {
+      this.indexState = undefined;
+    }
+  }
+
+  // Só membros aprovados leem a rodada (rules). Os votos dos outros só são assinados
+  // depois de revelada — antes disso as rules negam, e o valor nem chega ao navegador.
+  private syncRound() {
+    const roundId = this.myMember?.status === 'approved' ? this.room?.currentRoundId ?? null : null;
+
+    if (roundId === this.watchedRoundId || this.userId == null) {
+      return;
+    }
+
+    this.stopRoundListeners();
+    this.watchedRoundId = roundId;
+
+    if (roundId == null) {
+      return;
+    }
+
+    this.roundUnsubs.push(
+      this.roundService.listenRound(this.id, roundId, (round, hasPendingWrites) => {
+        this.round = round;
+
+        if (!hasPendingWrites) {
+          this.syncVotes(roundId);
         }
+      }),
+      this.roundService.listenMyVote(this.id, roundId, this.userId, (vote) => this.myVote = vote),
+    );
+  }
+
+  private syncVotes(roundId: string) {
+    if (!this.round?.revealed || this.votesUnsub) {
+      return;
+    }
+
+    this.votesUnsub = this.roundService.listenVotes(this.id, roundId, (votes) => this.votes = votes, () => {
+      this.votesUnsub = undefined;
+
+      if (this.watchedRoundId === roundId && this.votesRetries++ < 3) {
+        setTimeout(() => this.syncVotes(roundId), 1500);
       }
-
-      this.users = arrayUsers;
     });
   }
 
-  async sendValue(point: any) {
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'value'), point?.value);
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id, 'selected'), true);
+  private stopRoundListeners() {
+    this.roundUnsubs.forEach((unsub) => unsub());
+    this.roundUnsubs = [];
+    this.votesUnsub?.();
+    this.votesUnsub = undefined;
+    this.votesRetries = 0;
+    this.round = undefined;
+    this.myVote = undefined;
+    this.votes = undefined;
   }
 
-  async showCards() {
-    await this.roomService.editFirebaseRoomField(this.id, 'isVisible', !this.room?.isVisible);
+  ngOnDestroy() {
+    this.unsub?.();
+    this.stopRoundListeners();
+    this.watchedRoundId = null;
   }
 
-  async resetCards() {
-    const users = await Object.keys(this.room?.users);
+  get isOwner(): boolean {
+    return this.userId != null && this.userId === this.room?.ownerId;
+  }
 
-    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'value'), '');
-      await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', users[indexUserId], 'selected'), false);
+  get isFacilitator(): boolean {
+    return this.room?.status === 'open' && this.userId != null
+      && (this.userId === this.room.ownerId || this.userId === this.room.controllerId);
+  }
+
+  get canVote(): boolean {
+    return this.room?.status === 'open' && this.round != null && !this.round.revealed;
+  }
+
+  get myMember(): MemberRow | undefined {
+    return this.members.find((member) => member.uid === this.userId);
+  }
+
+  get approvedMembers(): MemberRow[] {
+    return this.members.filter((member) => member.status === 'approved');
+  }
+
+  get pendingMembers(): MemberRow[] {
+    return this.members.filter((member) => member.status === 'pending');
+  }
+
+  get votesLoaded(): boolean {
+    return this.votes != undefined;
+  }
+
+  hasVoted(uid: string): boolean {
+    return this.round?.voters?.[uid] === true;
+  }
+
+  voteLabel(uid: string): string {
+    return this.votes?.[uid]?.value ?? '—';
+  }
+
+  private get options(): PointingOption[] {
+    return this.round?.pointingType.options ?? [];
+  }
+
+  get average(): number | null {
+    if (this.votes == undefined) {
+      return null;
     }
 
-    await this.showCards();
+    return averageWeight(Object.values(this.votes).map((vote) => weightOf(vote.value, this.options)));
   }
 
-  async saveRoom() {
-    await this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), {
-      'id': this.user?.id,
-      'name': this.user?.name,
-      'selected': false,
-      'value': '',
-    });
-
-    this.user.rooms[this.id] = await {
-      'id': this.id ?? '',
-      'title': this.room?.title ?? '',
-      'description': this.room?.description ?? '',
-    };
-
-    await this.navService.updateUser(this.user?.id, this.user);
+  get averageText(): string {
+    return this.average == null ? '—' : String(Math.round(this.average * 100) / 100);
   }
 
-  async removeRoom() {
-    this.roomService.editFirebaseRoomField(this.id, new FieldPath('users', this.user?.id), deleteField());
-
-    this.navService.editFirebaseUserFild(this.user?.id, new FieldPath('rooms', this.id), deleteField());
-
-    this.userConfig = null;
+  get approximateLabel(): string {
+    return this.average == null ? '—' : nearestOption(this.average, this.options)?.label ?? '—';
   }
 
-  async deleteRoom() {
-    const users = await Object.keys(this.room?.users);
+  private async attempt(action: () => Promise<unknown>, message: string): Promise<boolean> {
+    this.errorMessage = '';
 
-    for (let indexUserId = 0; indexUserId < users.length; indexUserId++) {
-      await this.navService.editFirebaseUserFild(users[indexUserId], new FieldPath('rooms', this.id), deleteField());
+    try {
+      await action();
+      return true;
+    } catch {
+      this.errorMessage = message;
+      return false;
+    }
+  }
+
+  async requestJoin() {
+    const name = this.joinName.trim();
+
+    if (this.userId == null || name === '') {
+      return;
     }
 
-    await this.roomService.removeFirebaseRoom(this.id);
+    await this.attempt(() => this.roomService.requestJoin(this.id, this.userId!, name), 'Não foi possível pedir entrada na sala.');
+  }
+
+  async copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      this.linkCopied = true;
+      setTimeout(() => this.linkCopied = false, 2000);
+    } catch {
+      this.errorMessage = 'Não foi possível copiar. Copie o endereço do navegador.';
+    }
+  }
+
+  async approveMember(uid: string) {
+    await this.attempt(() => this.roomService.approveMember(this.id, uid), 'Não foi possível aprovar o participante.');
+  }
+
+  async removeMember(uid: string) {
+    await this.attempt(() => this.roomService.removeMember(this.id, uid), 'Não foi possível remover o participante.');
+  }
+
+  async changeController(controllerId: string) {
+    await this.attempt(() => this.roomService.updateControllerId(this.id, controllerId), 'Não foi possível trocar o controlador.');
+  }
+
+  async closeRoom() {
+    await this.attempt(() => this.roomService.closeRoom(this.id), 'Não foi possível encerrar a sala.');
+  }
+
+  async startRound(event: { text: string; pointingType: PointingType }) {
+    if (this.userId == null || this.startingRound) {
+      return;
+    }
+
+    this.startingRound = true;
+
+    const started = await this.attempt(() => this.roundService.startRound(this.id, this.userId!, event.text, event.pointingType), 'Não foi possível iniciar a rodada.');
+
+    if (started) {
+      this.roundControl?.reset();
+    }
+
+    this.startingRound = false;
+  }
+
+  async vote(label: string) {
+    if (!this.canVote || this.round?.id == null || this.userId == null) {
+      return;
+    }
+
+    await this.attempt(() => this.roundService.castVote(this.id, this.round!.id!, this.userId!, label, this.hasVoted(this.userId!)), 'Não foi possível registrar o voto.');
+  }
+
+  async revealRound() {
+    if (this.round?.id == null || this.userId == null) {
+      return;
+    }
+
+    await this.attempt(() => this.roundService.revealRound(this.id, this.round!.id!, this.userId!), 'Não foi possível revelar os votos.');
   }
 }

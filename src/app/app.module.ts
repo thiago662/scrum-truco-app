@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { getAuth, provideAuth } from '@angular/fire/auth';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -16,6 +17,8 @@ import { RoomComponent } from './room/room.component';
 import { RoomViewComponent } from './room/room-view/room-view.component';
 import { RoomSearchComponent } from './room/room-search/room-search.component';
 import { RoomAddComponent } from './room/room-add/room-add.component';
+import { PointingTypePickerComponent } from './room/pointing-type-picker/pointing-type-picker.component';
+import { RoundControlComponent } from './room/round-control/round-control.component';
 
 @NgModule({
   declarations: [
@@ -26,6 +29,8 @@ import { RoomAddComponent } from './room/room-add/room-add.component';
     RoomViewComponent,
     RoomSearchComponent,
     RoomAddComponent,
+    PointingTypePickerComponent,
+    RoundControlComponent,
   ],
   imports: [
     BrowserModule,
@@ -33,11 +38,12 @@ import { RoomAddComponent } from './room/room-add/room-add.component';
     NgbModule,
     FormsModule,
     ReactiveFormsModule,
-    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideFirestore(() => getFirestore()),
   ],
   providers: [
-    provideClientHydration()
+    provideClientHydration(),
+    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
+    provideFirestore(() => getFirestore()),
+    provideAuth(() => getAuth()),
   ],
   bootstrap: [AppComponent]
 })

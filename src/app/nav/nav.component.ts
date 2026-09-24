@@ -1,164 +1,130 @@
-import { Component, inject, TemplateRef, ViewEncapsulation, Injectable } from '@angular/core';
+import { Component, inject, TemplateRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { NgbOffcanvas, NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 import { FormGroup, FormControl } from '@angular/forms';
-import { Observable } from 'rxjs';
-import { NavService } from './nav.service';
-import { User } from '../model/user.model';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { AuthModalService } from '../auth/auth-modal.service';
 
 @Component({
   selector: 'app-nav',
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss'
 })
-export class NavComponent {
+export class NavComponent implements OnInit, OnDestroy {
   private offcanvasService = inject(NgbOffcanvas);
+
+  @ViewChild('contentmodal') contentModal!: TemplateRef<any>;
 
   isMenuCollapsed = true;
 
   userForm = new FormGroup({
     id: new FormControl(''),
     name: new FormControl(''),
+    companyName: new FormControl(''),
     email: new FormControl(''),
     password: new FormControl(''),
   });
-  isLogged: boolean = false;
-  mode: any;
+  isLogged = false;
+  mode: 'login' | 'create' | '' = '';
+  errorMessage = '';
+
+  private userSub?: Subscription;
+  private modalRequestSub?: Subscription;
 
   constructor(
     config: NgbModalConfig,
-		private modalService: NgbModal,
-    private navService: NavService,
+    private modalService: NgbModal,
+    private authService: AuthService,
+    private authModalService: AuthModalService,
   ) { }
 
-  async ngOnInit() {
-    this.getUserIfIsLog();
+  ngOnInit() {
+    this.userSub = this.authService.currentUser$.subscribe((user) => {
+      this.isLogged = user != null && !user.isGuest;
+
+      this.userForm.patchValue({
+        id: user?.id ?? '',
+        name: user?.isGuest ? '' : user?.name ?? '',
+        companyName: user?.companyName ?? '',
+        email: user?.email ?? '',
+        password: '',
+      });
+    });
+
+    this.modalRequestSub = this.authModalService.openRequest$.subscribe((mode) => {
+      this.selectedMode(mode);
+      this.open(this.contentModal);
+    });
+  }
+
+  ngOnDestroy() {
+    this.userSub?.unsubscribe();
+    this.modalRequestSub?.unsubscribe();
   }
 
   openCanvasEnd(content: TemplateRef<any>) {
-		this.offcanvasService.open(content, { position: 'end' });
-	}
+    this.offcanvasService.open(content, { position: 'end' });
+  }
 
   checkCanvas() {
     return this.offcanvasService.hasOpenOffcanvas() ?? false;
   }
 
-	open(content: any) {
-		this.modalService.open(content);
-	}
-
-	selectedMode(mode: any) {
-		this.mode = mode;
-	}
-
-  async getUserIfIsLog() {
-    var user: any = await this.navService.getUser();
-
-    if (user == null) {
-      this.isLogged = await false;
-    } else {
-      this.userForm.setValue({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        password: user.password,
-      });
-
-      this.isLogged = true;
-    }
+  open(content: TemplateRef<unknown>) {
+    this.errorMessage = '';
+    this.modalService.open(content);
   }
 
-  async logout() {
-    await this.navService.removeLocalStoregeUser();
-
-    await this.userForm.setValue({
-      id: '',
-      name: '',
-      email: '',
-      password: '',
-    });
-
-    this.mode = await '';
-
-    this.isLogged = await false;
+  selectedMode(mode: 'login' | 'create') {
+    this.errorMessage = '';
+    this.mode = mode;
   }
 
   async login() {
-    var userForm = await this.userForm.value;
+    var userForm = this.userForm.value;
 
-    var userIsLogged: any = await this.navService.loginUser(userForm?.email, userForm?.password);
-
-    if (userIsLogged != null) {
-      await this.userForm.setValue({
-        id: userIsLogged?.id ?? '',
-        name: userIsLogged?.name ?? '',
-        email: userIsLogged?.email ?? '',
-        password: userIsLogged?.password ?? '',
-      });
-  
-      this.isLogged = await true;
+    try {
+      await this.authService.login(userForm?.email ?? '', userForm?.password ?? '');
+    } catch {
+      this.errorMessage = 'E-mail ou senha inválidos.';
     }
   }
 
   async createUser() {
-    var userForm = await this.userForm.value;
+    var userForm = this.userForm.value;
 
-    var emailExist = await this.navService.checkEmailExistFirebase(userForm?.email);
-
-    if (emailExist) {
-      this.isLogged = await false;
-
-      return;
+    try {
+      await this.authService.register(
+        userForm?.email ?? '',
+        userForm?.password ?? '',
+        userForm?.name ?? '',
+        userForm?.companyName ?? '',
+      );
+    } catch {
+      this.errorMessage = 'Não foi possível criar a conta. O e-mail já pode estar em uso.';
     }
-
-    var user: any = await {
-      name: userForm?.name ?? '',
-      email: userForm?.email ?? '',
-      password: userForm?.password ?? '',
-      rooms: {},
-    };
-
-    var userFirebase: any = await this.navService.createUser(user);
-
-    await this.userForm.patchValue({
-      id: userFirebase?.id,
-    });
-
-    this.isLogged = await true;
   }
 
-  async updateUser() {
-    var userForm = await this.userForm.value;
+  async updateProfile() {
+    var userForm = this.userForm.value;
 
-    var userNow = await this.navService.getUser();
-
-    if (userNow?.email != userForm?.email) {
-      var emailExist = await this.navService.checkEmailExistFirebase(userForm?.email);
-
-      if (emailExist) {
-        return;
-      }
-    }
-
-    var user: any = {
-      id: userForm?.id ?? '',
+    await this.authService.updateProfile(userForm?.id ?? '', {
       name: userForm?.name ?? '',
-      email: userForm?.email ?? '',
-      password: userForm?.password ?? '',
-    };
-
-    var userFirebase: any = await this.navService.updateUser(user?.id, user);
-
-    this.userForm.patchValue({
-      id: userFirebase?.id ?? '',
-      name: userFirebase?.name ?? '',
-      email: userFirebase?.email ?? '',
-      password: userFirebase?.password ?? '',
+      companyName: userForm?.companyName ?? '',
     });
+  }
+
+  async logout() {
+    await this.authService.logout();
+
+    this.mode = '';
   }
 
   async deleteUser() {
-    await this.navService.deleteUser(this.userForm.value?.id);
-
-    window.location.reload();
+    try {
+      await this.authService.deleteAccount(this.userForm.value?.id ?? '');
+    } catch {
+      this.errorMessage = 'Não foi possível excluir a conta. Faça login novamente e tente de novo.';
+    }
   }
 }

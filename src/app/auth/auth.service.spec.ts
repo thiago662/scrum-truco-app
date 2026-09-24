@@ -1,21 +1,23 @@
 import { TestBed } from '@angular/core/testing';
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideAuth, getAuth } from '@angular/fire/auth';
 import { environment } from '../../environments/environment';
 
-import { RoomService } from './room.service';
+import { AuthService } from './auth.service';
 
-describe('RoomService', () => {
-  let service: RoomService;
+describe('AuthService', () => {
+  let service: AuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
         provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
         provideFirestore(() => getFirestore()),
+        provideAuth(() => getAuth()),
       ],
     });
-    service = TestBed.inject(RoomService);
+    service = TestBed.inject(AuthService);
   });
 
   it('should be created', () => {

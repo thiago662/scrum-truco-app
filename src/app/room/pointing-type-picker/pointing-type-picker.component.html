@@ -1,0 +1,29 @@
+<div class="mb-3">
+    <label for="pointingType" class="form-label">Tipo de pontuação</label>
+    <select id="pointingType" class="form-select" [(ngModel)]="selectedId" [ngModelOptions]="{standalone: true}">
+        @for (type of types; track type.id) {
+            <option [value]="type.id">{{ type.name }}</option>
+        }
+        <option value="custom">Personalizado</option>
+    </select>
+</div>
+
+@if (isCustom) {
+    @for (option of customOptions; track $index) {
+        <div class="input-group mb-2">
+            <input type="text" class="form-control" placeholder="Valor" [(ngModel)]="option.label" [ngModelOptions]="{standalone: true}">
+            <input type="number" class="form-control" placeholder="Peso (vazio = fora da média)" [(ngModel)]="option.weight" [ngModelOptions]="{standalone: true}">
+            <button type="button" class="btn btn-outline-danger" (click)="removeOption($index)">Remover</button>
+        </div>
+    }
+    <button type="button" class="btn btn-sm btn-outline-secondary mb-2" (click)="addOption()">Adicionar valor</button>
+    @if (!current) {
+        <div class="form-text">Preencha ao menos 2 valores com nomes diferentes.</div>
+    }
+} @else {
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        @for (option of current?.options; track option.label) {
+            <span class="badge text-bg-light border">{{ option.label }}</span>
+        }
+    </div>
+}

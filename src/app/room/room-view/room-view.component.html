@@ -1,50 +1,118 @@
-<div>
-    <div class="container d-flex justify-content-sm-around align-items-center overflow-auto" style="height: 30rem;">
-        @for (item of users; track $index) {
-            <div class="text-center d-flex flex-column align-items-center">
-                <div class="card border-5" style="height: 90px; width: 70px;" [ngClass]="!(room?.isVisible) && !item.selected ? 'bg-light' : 'bg-dark'">
-                    <div class="card-body d-flex justify-content-around">
-                        <img src="./assets/poker-logo-preto.png" alt="?" *ngIf="!room?.isVisible && !item.selected" style="height: 40px; width: 40px;">
-                        <img src="./assets/poker-logo-branco.png" alt="?" *ngIf="!room?.isVisible && item.selected" style="height: 40px; width: 40px;">
-                        <h4 class="card-title text-light" *ngIf="room?.isVisible">{{ item.value }}</h4>
-                    </div>
-                </div>
-                {{ item.name }}
-            </div>
-        }
-    </div>
-</div>
+<div class="container">
+    @if (errorMessage) {
+        <div class="alert alert-danger">{{ errorMessage }}</div>
+    }
 
-<footer class="bg-light text-center fixed-bottom">
-    <div class="container p-3">
-        @if (userConfig?.isAdm) {
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="showCards()">
-                <i [ngClass]="!(room?.isVisible) ? 'far fa-eye' : 'far fa-eye-slash'" class=""></i>
-            </button>
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="resetCards()">
-                <i class="fas fa-redo"></i>
-            </button>
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="deleteRoom()">
-                <i class="fas fa-trash"></i>
-            </button>
-        }
-        @if (userConfig == null && !userConfig?.isAdm) {
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="saveRoom()">
-                <i class="far fa-star"></i>
-            </button>
-        } @else if (!userConfig?.isAdm) {
-            <button class="btn btn-outline-success rounded-circle mx-1" (click)="removeRoom()">
-                <i class="fas fa-star"></i>
-            </button>
-        }
-    </div>
-    <div class="p-3 overflow-auto">
-        <div class="container text-center d-flex justify-content-md-between">
-        <div *ngFor="let point of points" class="card border-5" (click)="sendValue(point)" style="height: 90px; min-width: 70px;" [ngClass]="point.selected ? 'bg-dark text-light' : 'bg-light text-dark'">
-            <div class="card-body">
-            <h4 class="card-title">{{ point.value }}</h4>
+    <h3>{{ room?.title }}</h3>
+    <p>{{ room?.description }}</p>
+
+    @if (room?.status === 'closed') {
+        <div class="alert alert-secondary">Essa sala foi encerrada.</div>
+    }
+
+    @if (room && !myMember && room.status === 'open') {
+        <div class="mb-3">
+            <label for="joinName" class="form-label">Seu nome na sala</label>
+            <input type="text" class="form-control mb-2" id="joinName" [(ngModel)]="joinName">
+            <button type="button" class="btn btn-primary" (click)="requestJoin()">Pedir entrada</button>
+        </div>
+    } @else if (myMember?.status === 'pending') {
+        <div class="alert alert-info">Aguardando o dono da sala aprovar sua entrada...</div>
+    } @else if (myMember?.status === 'approved') {
+        <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="copyLink" (click)="copyLink()">
+            {{ linkCopied ? 'Link copiado!' : 'Copiar link da sala' }}
+        </button>
+
+        @if (round) {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-1 text-body-secondary">{{ round.revealed ? 'Votos revelados' : 'Em votação' }}</h6>
+                    <p class="card-text fs-5 mb-0" id="roundTitle">{{ round.text }}</p>
+                </div>
             </div>
-        </div>
-        </div>
-    </div>
-</footer>
+
+            @if (canVote) {
+                <div class="d-flex flex-wrap gap-2 mb-3" id="deck">
+                    @for (option of round.pointingType.options; track option.label) {
+                        <button type="button" class="btn" [class.btn-dark]="myVote?.value === option.label" [class.btn-outline-dark]="myVote?.value !== option.label" (click)="vote(option.label)">{{ option.label }}</button>
+                    }
+                </div>
+            }
+
+            @if (round.revealed) {
+                @if (votesLoaded) {
+                    <div class="alert alert-info" id="results">
+                        Média: <strong>{{ averageText }}</strong> · Aproximada: <strong>{{ approximateLabel }}</strong>
+                    </div>
+                } @else {
+                    <div class="alert alert-light">Carregando votos...</div>
+                }
+            }
+        } @else {
+            <p class="text-body-secondary">Nenhuma rodada em andamento.</p>
+        }
+
+        <h5>Participantes</h5>
+        <ul class="list-group mb-3" id="participants">
+            @for (member of approvedMembers; track member.uid) {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ member.name }}
+                    <span>
+                        @if (round) {
+                            @if (round.revealed) {
+                                <span class="badge text-bg-dark me-1">{{ votesLoaded ? voteLabel(member.uid) : '…' }}</span>
+                            } @else if (hasVoted(member.uid)) {
+                                <span class="badge text-bg-success me-1">votou</span>
+                            } @else {
+                                <span class="badge text-bg-light border me-1">aguardando</span>
+                            }
+                        }
+                        @if (member.uid === room?.controllerId) {
+                            <span class="badge bg-primary me-1">Controlador</span>
+                        }
+                        @if (member.role === 'owner') {
+                            <span class="badge bg-secondary">Dono</span>
+                        }
+                        @if (isOwner && member.role !== 'owner' && member.uid !== room?.controllerId) {
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeMember(member.uid)">Remover</button>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+
+        @if (isFacilitator) {
+            @if (round && !round.revealed) {
+                <button type="button" class="btn btn-success mb-3" (click)="revealRound()">Revelar votos</button>
+            }
+            <app-round-control [busy]="startingRound" (start)="startRound($event)"></app-round-control>
+        }
+
+        @if (isOwner && room?.status === 'open') {
+            @if (pendingMembers.length > 0) {
+                <h5>Pedidos de entrada</h5>
+                <ul class="list-group mb-3">
+                    @for (member of pendingMembers; track member.uid) {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ member.name }}
+                            <span>
+                                <button type="button" class="btn btn-sm btn-success me-1" (click)="approveMember(member.uid)">Aprovar</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeMember(member.uid)">Rejeitar</button>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="mb-3">
+                <label for="controllerId" class="form-label">Controlador da sala</label>
+                <select id="controllerId" class="form-select" [ngModel]="room?.controllerId" (ngModelChange)="changeController($event)">
+                    @for (member of approvedMembers; track member.uid) {
+                        <option [value]="member.uid">{{ member.name }}</option>
+                    }
+                </select>
+            </div>
+            <button type="button" class="btn btn-outline-danger" (click)="closeRoom()">Encerrar sala</button>
+        }
+    }
+</div>

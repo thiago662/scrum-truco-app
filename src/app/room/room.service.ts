@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collectionData, updateDoc, addDoc, doc, collection, getDoc, getDocs, query, deleteDoc, FieldPath, deleteField } from '@angular/fire/firestore';
-import { QueryConstraint, where } from 'firebase/firestore';
+import { Firestore, collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { Room, RoomIndexEntry } from '../model/room.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,62 +11,68 @@ export class RoomService {
 
   constructor() { }
 
-  async getRoom(id: any) {
-    var room = await this.getFirebaseRoom(id);
-
-    return await room;
-  }
-
-  async createRoom(room: any) {
-    var roomFirebase = await this.setFirebaseRoom(room);
-
-    return await roomFirebase;
-  }
-
-  async getFirebaseRoom(id: any) {
-    const docRef = await doc(this.firestore, 'rooms', id);
-
-    const docSnap = await getDoc(docRef);
-
-    const roomFirebase: any = await docSnap.data();
-
-    if (roomFirebase == undefined) {
-      return await roomFirebase;
-    }
-
-    roomFirebase.id = await docRef.id;
-
-    return await roomFirebase;
-  }
-
-  async setFirebaseRoom(room: any) {
-    const roomCollection = await collection(this.firestore, 'rooms');
+  async createRoom(room: Room): Promise<string> {
+    const roomCollection = collection(this.firestore, 'rooms');
 
     const docRef = await addDoc(roomCollection, room);
 
-    const docSnap = await getDoc(docRef);
+    return docRef.id;
+  }
 
-    const roomFirebase: any = await docSnap.data();
+  async getRoom(id: string): Promise<Room | undefined> {
+    const docSnap = await getDoc(doc(this.firestore, 'rooms', id));
 
-    roomFirebase.id = await docRef.id;
-
-    var roomReturn: any = await {
-      id: docRef.id ?? '',
-      title: roomFirebase?.title ?? '',
+    if (!docSnap.exists()) {
+      return undefined;
     }
 
-    return await roomReturn;
+    return { id: docSnap.id, ...docSnap.data() } as Room;
   }
 
-  async editFirebaseRoomField(id: any, field: any|FieldPath, value: any) {
-    const docRef = await doc(this.firestore, 'rooms', id);
-
-    await updateDoc(docRef, field, value);
+  listenRoom(id: string, onChange: (room: Room | undefined) => void): Unsubscribe {
+    return onSnapshot(doc(this.firestore, 'rooms', id), (snapshot) => {
+      onChange(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } as Room : undefined);
+    });
   }
 
-  async removeFirebaseRoom(id: any) {
-    const docRef = await doc(this.firestore, 'rooms', id);
+  async updateControllerId(id: string, controllerId: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'rooms', id), { controllerId });
+  }
 
-    await deleteDoc(docRef);
+  async requestJoin(id: string, uid: string, name: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'rooms', id), new FieldPath('members', uid), {
+      name,
+      role: 'member',
+      status: 'pending',
+      joinedAt: serverTimestamp(),
+    });
+  }
+
+  async approveMember(id: string, uid: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'rooms', id), new FieldPath('members', uid, 'status'), 'approved');
+  }
+
+  async removeMember(id: string, uid: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'rooms', id), new FieldPath('members', uid), deleteField());
+  }
+
+  async closeRoom(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'rooms', id), { status: 'closed' });
+  }
+
+  async addToUserIndex(uid: string, roomId: string, title: string): Promise<void> {
+    await setDoc(doc(this.firestore, 'users', uid, 'rooms', roomId), {
+      roomId,
+      title,
+      joinedAt: serverTimestamp(),
+    });
+  }
+
+  async removeFromUserIndex(uid: string, roomId: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, 'users', uid, 'rooms', roomId));
+  }
+
+  getUserRooms(uid: string): Observable<RoomIndexEntry[]> {
+    return collectionData(collection(this.firestore, 'users', uid, 'rooms'), { idField: 'id' }) as Observable<RoomIndexEntry[]>;
   }
 }

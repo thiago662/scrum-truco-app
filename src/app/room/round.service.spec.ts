@@ -3,10 +3,10 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { environment } from '../../environments/environment';
 
-import { RoomService } from './room.service';
+import { RoundService } from './round.service';
 
-describe('RoomService', () => {
-  let service: RoomService;
+describe('RoundService', () => {
+  let service: RoundService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -15,7 +15,7 @@ describe('RoomService', () => {
         provideFirestore(() => getFirestore()),
       ],
     });
-    service = TestBed.inject(RoomService);
+    service = TestBed.inject(RoundService);
   });
 
   it('should be created', () => {

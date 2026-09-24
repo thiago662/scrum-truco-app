@@ -40,3 +40,12 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Config do projeto Firebase (cada um usa o seu; ver *.example)
+src/environments/firebase.config.ts
+.firebaserc
+
+# Firebase emulator
+*-debug.log
+.firebase/
+firebase-export-*/

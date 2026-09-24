@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { ActivatedRoute, Router} from '@angular/router';
+import { Router } from '@angular/router';
+import { serverTimestamp } from '@angular/fire/firestore';
 import { RoomService } from '../room.service';
-import { NavService } from '../../nav/nav.service';
+import { AuthService } from '../../auth/auth.service';
+import { Room } from '../../model/room.model';
 
 @Component({
   selector: 'app-room-add',
@@ -10,112 +12,51 @@ import { NavService } from '../../nav/nav.service';
   styleUrl: './room-add.component.scss'
 })
 export class RoomAddComponent {
-  points = [
-    {
-      value: '?',
-      selected: false
-    },
-    {
-      value: '0',
-      selected: false
-    },
-    {
-      value: '1',
-      selected: false
-    },
-    {
-      value: '2',
-      selected: false
-    },
-    {
-      value: '3',
-      selected: false
-    },
-    {
-      value: '5',
-      selected: false
-    },
-    {
-      value: '8',
-      selected: false
-    },
-    {
-      value: '13',
-      selected: false
-    },
-    {
-      value: '21',
-      selected: false
-    },
-    {
-      value: '34',
-      selected: false
-    },
-    {
-      value: '55',
-      selected: false
-    },
-    {
-      value: '89',
-      selected: false
-    },
-  ];
   roomForm = new FormGroup({
-    id: new FormControl(''),
     title: new FormControl(''),
     description: new FormControl(''),
   });
-  user: any;
 
   constructor(
     private roomService: RoomService,
-    private navService: NavService,
-    private route: ActivatedRoute,
+    private authService: AuthService,
     private router: Router,
-  ) {
-    this.getUser();
-  }
-
-  async getUser() {
-    var user: any = await this.navService.getUser();
-
-    this.user = await user;
-  }
+  ) { }
 
   async createRoom() {
-    var roomForm = await this.roomForm.value;
+    var user = await this.authService.getCurrentUser();
 
-    var room: any = await {
-      title: roomForm?.title ?? '',
+    if (user?.id == null || user.isGuest) {
+      return;
+    }
+
+    var roomForm = this.roomForm.value;
+    var title = roomForm?.title ?? '';
+
+    var room: Room = {
+      title,
       description: roomForm?.description ?? '',
-      points: this.points,
-      isVisible: false,
-      users: {},
-    };
-    room.users[this.user?.id] = await {
-      'id': this.user?.id,
-      'name': this.user?.name,
-      'isAdm': true,
-      'selected': false,
-      'value': '',
-    };
-
-    var roomFirebase: any = await this.roomService.createRoom(room);
-
-    await this.updateUser(roomFirebase);
-
-    await this.router.navigate(['/rooms/' + roomFirebase?.id]);
-  }
-
-  async updateUser(room: any) {
-    var user: any = await this.navService.getUser();
-
-    user.rooms[room?.id] = await {
-      'id': room?.id ?? '',
-      'title': room?.title ?? '',
-      'description': room?.description ?? '',
+      ownerId: user.id,
+      controllerId: user.id,
+      status: 'open',
+      currentRoundId: null,
+      members: {
+        [user.id]: {
+          name: user.name ?? '',
+          role: 'owner',
+          status: 'approved',
+          joinedAt: serverTimestamp(),
+        },
+      },
+      lastActivityAt: serverTimestamp(),
+      ownerLastSeen: serverTimestamp(),
+      createdAt: serverTimestamp(),
     };
 
-    await this.navService.updateUser(user?.id, user);
+    var roomId = await this.roomService.createRoom(room);
+
+    await this.roomService.addToUserIndex(user.id, roomId, title);
+
+    await this.router.navigate(['/rooms/' + roomId]);
   }
 }

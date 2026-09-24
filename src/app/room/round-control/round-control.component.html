@@ -1,0 +1,11 @@
+<div class="card mb-3">
+    <div class="card-body">
+        <h6 class="card-title">Nova rodada</h6>
+        <div class="mb-3">
+            <label for="roundText" class="form-label">O que será pontuado</label>
+            <input type="text" class="form-control" id="roundText" [(ngModel)]="text" [ngModelOptions]="{standalone: true}">
+        </div>
+        <app-pointing-type-picker #picker></app-pointing-type-picker>
+        <button type="button" class="btn btn-primary" [disabled]="busy || !text.trim() || !picker.current" (click)="submit(picker.current)">Iniciar rodada</button>
+    </div>
+</div>

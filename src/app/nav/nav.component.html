@@ -43,28 +43,38 @@
         </div>
         @if (isLogged) {
             <div class="modal-body">
+                @if (errorMessage) {
+                    <div class="alert alert-danger">{{ errorMessage }}</div>
+                }
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome</label>
                     <input type="text" class="form-control" id="name" formControlName="name">
                 </div>
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" formControlName="email">
+                    <label for="companyName" class="form-label">Empresa</label>
+                    <input type="text" class="form-control" id="companyName" formControlName="companyName">
                 </div>
                 <div class="mb-3">
-                    <label for="password" class="form-label">Senha</label>
-                    <input type="password" class="form-control" id="password" formControlName="password">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" formControlName="email" readonly>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="updateUser()">Salvar</button>
+                <button type="submit" class="btn btn-primary" (click)="updateProfile()">Salvar</button>
                 <button type="submit" class="btn btn-primary" (click)="logout()">Logout</button>
                 <button type="submit" class="btn btn-primary" (click)="deleteUser()">Excluir</button>
             </div>
         } @else if (!isLogged && mode == 'create') {
             <div class="modal-body">
+                @if (errorMessage) {
+                    <div class="alert alert-danger">{{ errorMessage }}</div>
+                }
                 <div class="mb-3">
-                    <label for="name" class="form-label">Nome</label>
+                    <label for="companyName" class="form-label">Nome da empresa</label>
+                    <input type="text" class="form-control" id="companyName" formControlName="companyName">
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome de usuário</label>
                     <input type="text" class="form-control" id="name" formControlName="name">
                 </div>
                 <div class="mb-3">
@@ -81,6 +91,9 @@
             </div>
         } @else if (!isLogged && mode == 'login') {
             <div class="modal-body">
+                @if (errorMessage) {
+                    <div class="alert alert-danger">{{ errorMessage }}</div>
+                }
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" formControlName="email">

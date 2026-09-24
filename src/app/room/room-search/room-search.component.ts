@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute, Router} from '@angular/router';
+import { Router } from '@angular/router';
 import { RoomService } from '../room.service';
-import { NavService } from '../../nav/nav.service';
+import { Room } from '../../model/room.model';
 
 @Component({
   selector: 'app-room-search',
@@ -9,13 +9,11 @@ import { NavService } from '../../nav/nav.service';
   styleUrl: './room-search.component.scss'
 })
 export class RoomSearchComponent {
-  id: any;
-  room: any;
+  id = '';
+  room: Room | undefined;
 
   constructor(
-    private route: ActivatedRoute,
     private router: Router,
-    private navService: NavService,
     private roomService: RoomService,
   ) { }
 

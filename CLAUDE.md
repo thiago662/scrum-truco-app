@@ -4,14 +4,14 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar com código nes
 
 ## Projeto
 
-Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima tamanho/peso de tarefas votando em sigilo e o controlador revela. Usa NgModules (não standalone — ver schematics em `angular.json`). Backend é Firebase (Auth + Firestore) via `@angular/fire`, sempre no plano gratuito (Spark). Deploy: GitHub Actions (`.github/workflows/deploy-pages.yml`) builda e publica no GitHub Pages a cada push no `master`; **não existe mais `docs/` versionado**. A config do Firebase entra no build pelo secret `FIREBASE_CONFIG` do repositório. Sem VPS nem Cloud Functions (exigiria plano pago).
+Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima tamanho/peso de tarefas votando em sigilo e o controlador revela. Usa NgModules (não standalone — ver schematics em `angular.json`). Backend é Firebase (Auth + Firestore) via `@angular/fire`, sempre no plano gratuito (Spark). CI/deploy: um único workflow (`.github/workflows/deploy-pages.yml`). Em PRs e push no `master` ele roda checagem de tipos (app + specs), testes e `build:pages`; só no `master`, e só se tudo passar, publica no GitHub Pages — **não existe mais `docs/` versionado**. No `master` a config do Firebase vem do secret `FIREBASE_CONFIG`; em PRs/branches usa uma config de mentira (apiKey preenchida, porque o Auth lança `auth/invalid-api-key` se vier vazia; os testes não falam com o Firebase), então o CI funciona em forks e o secret nunca chega a código de PR. Sem VPS nem Cloud Functions (exigiria plano pago).
 
 ## Comandos
 
 - `npm start` / `ng serve` — dev server em http://localhost:4200
 - `ng build` — build com SSR/prerender em `dist/scrum-truco-app` (`browser/` + `server/`); serve pra checar o prerender, **não** pra publicar
 - `npm run build:pages` — build sem SSR (target `pages`, `baseHref=/scrum-truco-app/`) em `dist/pages/browser`, com `404.html` copiado do `index.html`. O `404.html` é o que faz o link `/rooms/:id` funcionar: o Pages não conhece a rota, cai no 404 e o Angular assume. É o mesmo comando do CI. O target `pages` duplica as opções de `build` em `angular.json` (esta versão do Angular não deixa desligar `server` por configuração): ao mudar assets/styles/budgets num, espelhar no outro
-- `ng test --watch=false --browsers=ChromeHeadless` — testes Karma/Jasmine (`--include='**/x.spec.ts'` roda um só)
+- `npm run test:ci` — testes Karma/Jasmine headless (launcher `ChromeHeadlessCI` com `--no-sandbox`, definido em `karma.conf.js`); é o mesmo comando do CI. `ng test` abre o Chrome em modo watch. Um spec só: `npm run test:ci -- --include='**/x.spec.ts'`
 - `npx tsc -p tsconfig.app.json --noEmit` — checagem de tipos rápida (o `ng build` só pega erro de template)
 - `npm run emulators` — Firestore + Auth Emulator locais (exige Java no PATH)
 - `firebase deploy --only firestore:rules` — publica `firestore.rules` no projeto real (`.firebaserc`); pede `firebase login` prévio

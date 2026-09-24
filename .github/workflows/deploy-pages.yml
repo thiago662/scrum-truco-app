@@ -1,7 +1,9 @@
-name: Deploy GitHub Pages
+name: CI e deploy GitHub Pages
 
 on:
   push:
+    branches: [master]
+  pull_request:
     branches: [master]
   workflow_dispatch:
 
@@ -11,8 +13,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
 
 jobs:
   build:
@@ -27,30 +32,45 @@ jobs:
 
       - run: npm ci
 
-      # A config do Firebase não fica no repositório: vem do secret FIREBASE_CONFIG, o objeto
-      # { apiKey: "...", ... } copiado do Console (aceita JSON ou literal JS). Ela continua indo
-      # no JS publicado, como em qualquer app web Firebase.
-      - name: Gerar firebase.config.ts a partir do secret
+      # No master (o que vai pro ar) a config real vem do secret FIREBASE_CONFIG: o objeto
+      # { apiKey: "...", ... } copiado do Console (aceita JSON ou literal JS); ela continua indo
+      # no JS publicado, como em qualquer app web Firebase. Em PRs e outras branches os testes e
+      # o build não falam com o Firebase, então usa valores de mentira (o SDK só exige apiKey
+      # preenchida): assim o CI roda em forks e nunca expõe o secret a código de PR.
+      - name: Gerar firebase.config.ts
         env:
           FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
-          if [ -z "$FIREBASE_CONFIG" ]; then echo "Secret FIREBASE_CONFIG ausente (ver README)"; exit 1; fi
-          node -e "const c = new Function('return ' + process.env.FIREBASE_CONFIG)(); if (!c.apiKey || !c.projectId) throw new Error('faltam apiKey/projectId')" \
-            || { echo "FIREBASE_CONFIG inválido: cole o objeto { apiKey: ..., projectId: ... } do Console"; exit 1; }
-          printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG" > src/environments/firebase.config.ts
+          if [ "$IS_MASTER" = "true" ]; then
+            if [ -z "$FIREBASE_CONFIG" ]; then echo "Secret FIREBASE_CONFIG ausente (ver README)"; exit 1; fi
+            node -e "const c = new Function('return ' + process.env.FIREBASE_CONFIG)(); if (!c.apiKey || !c.projectId) throw new Error('faltam apiKey/projectId')" \
+              || { echo "FIREBASE_CONFIG inválido: cole o objeto { apiKey: ..., projectId: ... } do Console"; exit 1; }
+            printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG" > src/environments/firebase.config.ts
+          else
+            printf 'export const firebaseConfig = { apiKey: "ci-placeholder-key", authDomain: "ci-placeholder.invalid", projectId: "ci-placeholder", storageBucket: "ci-placeholder.invalid", messagingSenderId: "0", appId: "ci-placeholder" };\n' > src/environments/firebase.config.ts
+          fi
 
-      - run: npx tsc -p tsconfig.app.json --noEmit
+      - name: Checagem de tipos
+        run: |
+          npx tsc -p tsconfig.app.json --noEmit
+          npx tsc -p tsconfig.spec.json --noEmit
+
+      - name: Testes
+        run: npm run test:ci
 
       - run: npm run build:pages
 
-      - uses: actions/configure-pages@v5
+      - if: env.IS_MASTER == 'true'
+        uses: actions/configure-pages@v5
 
-      - uses: actions/upload-pages-artifact@v3
+      - if: env.IS_MASTER == 'true'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist/pages/browser
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

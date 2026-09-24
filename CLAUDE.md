@@ -37,7 +37,8 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - **`provide*()` do AngularFire vão em `providers`**, não em `imports` do `AppModule`.
 - **Corrida na revelação**: `listenRound` usa `includeMetadataChanges` e `room-view` só assina os votos quando a rodada foi confirmada pelo servidor (`hasPendingWrites` false); `listenVotes` ignora snapshots `fromCache`. Senão o autor da revelação assina cedo e as rules negam.
 - **Specs**: componentes/serviços com Firebase precisam de `provideFirebaseApp/provideFirestore/provideAuth` no TestBed (ver `auth.service.spec.ts`).
-- `src/environments/*.ts` guardam a config do Firebase (chave de client, não é segredo); o histórico mostra que o dono às vezes as deixa em branco no commit — não commitar mudanças nelas sem pedir.
+- **Config do Firebase fica fora do git**: a real está em `src/environments/firebase.config.ts` e `.firebaserc` (ambos no `.gitignore`, só existem na máquina do dono); os `environment*.ts` apenas importam dela, e há `*.example` em branco no repo. Sem `firebase.config.ts`, build e testes não compilam (ver README). Nunca colocar a config real em arquivo versionado. Ela não é segredo (vai no JS publicado), mas o dono quer o repo público sem apontar pro projeto dele; a apiKey antiga já está no histórico e a proteção real são regras + restrição da key no Google Cloud.
+- Só conta cadastrada cria sala (regra `sign_in_provider != 'anonymous'`); convidado só entra/vota.
 - Convidado anônimo perde o acesso ao trocar de navegador/limpar dados (novo uid, volta a `pending`).
 
 ## Fora do escopo por enquanto

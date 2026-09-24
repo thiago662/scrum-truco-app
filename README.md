@@ -11,6 +11,16 @@ O repositório não traz a config de nenhum projeto Firebase. Para rodar você p
 3. Copie `src/environments/firebase.config.example.ts` para `src/environments/firebase.config.ts` e preencha com a config do app da Web.
 4. Copie `.firebaserc.example` para `.firebaserc` com o ID do seu projeto e publique as regras: `firebase deploy --only firestore:rules`.
 
+## Publicação (GitHub Pages via Actions)
+
+O site é buildado e publicado pelo workflow `.github/workflows/deploy-pages.yml` a cada push no `master`. Configuração única no repositório:
+
+1. Settings > Secrets and variables > Actions > **New repository secret**: nome `FIREBASE_CONFIG`, valor o objeto de config copiado do Console, com as chaves `{ ... }` (sem o `const firebaseConfig =`).
+2. Settings > Pages > Build and deployment > Source: **GitHub Actions**.
+3. Se o nome do repositório não for `scrum-truco-app`, ajuste `baseHref` no target `pages` do `angular.json`.
+
+A config vai no JS publicado (é assim em qualquer app web Firebase); o secret só a mantém fora do código versionado. Para testar o build de publicação localmente: `npm run build:pages` (saída em `dist/pages/browser`).
+
 `firebase.config.ts` e `.firebaserc` estão no `.gitignore`. A config do Firebase não é segredo (vai no JS do site), o que protege os dados são as regras do Firestore (`firestore.rules`) e a restrição da API key no Google Cloud Console.
 
 Este projeto foi gerado com [Angular CLI](https://github.com/angular/angular-cli) versão 17.1.0.

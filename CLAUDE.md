@@ -4,13 +4,13 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar com código nes
 
 ## Projeto
 
-Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima tamanho/peso de tarefas votando em sigilo e o controlador revela. Usa NgModules (não standalone — ver schematics em `angular.json`). Backend é Firebase (Auth + Firestore) via `@angular/fire`, sempre no plano gratuito (Spark). Deploy: build estático em `docs/` servido pelo GitHub Pages; sem VPS nem Cloud Functions (exigiria plano pago).
+Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima tamanho/peso de tarefas votando em sigilo e o controlador revela. Usa NgModules (não standalone — ver schematics em `angular.json`). Backend é Firebase (Auth + Firestore) via `@angular/fire`, sempre no plano gratuito (Spark). Deploy: GitHub Actions (`.github/workflows/deploy-pages.yml`) builda e publica no GitHub Pages a cada push no `master`; **não existe mais `docs/` versionado**. A config do Firebase entra no build pelo secret `FIREBASE_CONFIG` do repositório. Sem VPS nem Cloud Functions (exigiria plano pago).
 
 ## Comandos
 
 - `npm start` / `ng serve` — dev server em http://localhost:4200
 - `ng build` — build com SSR/prerender em `dist/scrum-truco-app` (`browser/` + `server/`); serve pra checar o prerender, **não** pra publicar
-- `npm run build:pages` — build sem SSR (target `pages`, `baseHref=/scrum-truco-app/`) e troca o conteúdo de `docs/` (GitHub Pages), gerando `404.html` a partir do `index.html`. O `404.html` é o que faz o link `/rooms/:id` funcionar: o Pages não conhece a rota, cai no 404 e o Angular assume. Única forma que escreve em `docs/`; revisar o `git diff` antes de commitar. O target `pages` duplica as opções de `build` em `angular.json` (esta versão do Angular não deixa desligar `server` por configuração): ao mudar assets/styles/budgets num, espelhar no outro
+- `npm run build:pages` — build sem SSR (target `pages`, `baseHref=/scrum-truco-app/`) em `dist/pages/browser`, com `404.html` copiado do `index.html`. O `404.html` é o que faz o link `/rooms/:id` funcionar: o Pages não conhece a rota, cai no 404 e o Angular assume. É o mesmo comando do CI. O target `pages` duplica as opções de `build` em `angular.json` (esta versão do Angular não deixa desligar `server` por configuração): ao mudar assets/styles/budgets num, espelhar no outro
 - `ng test --watch=false --browsers=ChromeHeadless` — testes Karma/Jasmine (`--include='**/x.spec.ts'` roda um só)
 - `npx tsc -p tsconfig.app.json --noEmit` — checagem de tipos rápida (o `ng build` só pega erro de template)
 - `npm run emulators` — Firestore + Auth Emulator locais (exige Java no PATH)
@@ -37,7 +37,7 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - **`provide*()` do AngularFire vão em `providers`**, não em `imports` do `AppModule`.
 - **Corrida na revelação**: `listenRound` usa `includeMetadataChanges` e `room-view` só assina os votos quando a rodada foi confirmada pelo servidor (`hasPendingWrites` false); `listenVotes` ignora snapshots `fromCache`. Senão o autor da revelação assina cedo e as rules negam.
 - **Specs**: componentes/serviços com Firebase precisam de `provideFirebaseApp/provideFirestore/provideAuth` no TestBed (ver `auth.service.spec.ts`).
-- **Config do Firebase fica fora do git**: a real está em `src/environments/firebase.config.ts` e `.firebaserc` (ambos no `.gitignore`, só existem na máquina do dono); os `environment*.ts` apenas importam dela, e há `*.example` em branco no repo. Sem `firebase.config.ts`, build e testes não compilam (ver README). Nunca colocar a config real em arquivo versionado. Ela não é segredo (vai no JS publicado), mas o dono quer o repo público sem apontar pro projeto dele; a apiKey antiga já está no histórico e a proteção real são regras + restrição da key no Google Cloud.
+- **Config do Firebase fica fora do git**: a real está em `src/environments/firebase.config.ts` e `.firebaserc` (ambos no `.gitignore`, só existem na máquina do dono); os `environment*.ts` apenas importam dela, e há `*.example` em branco no repo. Sem `firebase.config.ts`, build e testes não compilam (ver README). Nunca colocar a config real em arquivo versionado nem commitar build (`dist/`, `docs/`), porque o JS gerado a embute. Ela não é segredo (vai no JS publicado), mas o dono quer o repo público sem apontar pro projeto dele; a apiKey antiga já está no histórico e a proteção real são regras + restrição da key no Google Cloud.
 - Só conta cadastrada cria sala (regra `sign_in_provider != 'anonymous'`); convidado só entra/vota.
 - Convidado anônimo perde o acesso ao trocar de navegador/limpar dados (novo uid, volta a `pending`).
 

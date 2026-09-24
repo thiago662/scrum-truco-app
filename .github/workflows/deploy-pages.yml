@@ -1,0 +1,60 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # A config do Firebase não fica no repositório: vem do secret FIREBASE_CONFIG, o objeto
+      # { apiKey: "...", ... } copiado do Console (aceita JSON ou literal JS). Ela continua indo
+      # no JS publicado, como em qualquer app web Firebase.
+      - name: Gerar firebase.config.ts a partir do secret
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+        run: |
+          if [ -z "$FIREBASE_CONFIG" ]; then echo "Secret FIREBASE_CONFIG ausente (ver README)"; exit 1; fi
+          node -e "const c = new Function('return ' + process.env.FIREBASE_CONFIG)(); if (!c.apiKey || !c.projectId) throw new Error('faltam apiKey/projectId')" \
+            || { echo "FIREBASE_CONFIG inválido: cole o objeto { apiKey: ..., projectId: ... } do Console"; exit 1; }
+          printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG" > src/environments/firebase.config.ts
+
+      - run: npx tsc -p tsconfig.app.json --noEmit
+
+      - run: npm run build:pages
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/pages/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -47,11 +47,19 @@ export class RoundService {
       batch.update(this.roundRef(roomId, roundId), new FieldPath('voters', uid), true);
     }
 
+    // vota conta como atividade da sala (fase 2: evita encerrar por inatividade em rodada longa)
+    batch.update(doc(this.firestore, 'rooms', roomId), { lastActivityAt: serverTimestamp() });
+
     await batch.commit();
   }
 
   async revealRound(roomId: string, roundId: string, uid: string): Promise<void> {
-    await updateDoc(this.roundRef(roomId, roundId), { revealed: true, revealedAt: serverTimestamp(), revealedBy: uid });
+    const batch = writeBatch(this.firestore);
+
+    batch.update(this.roundRef(roomId, roundId), { revealed: true, revealedAt: serverTimestamp(), revealedBy: uid });
+    batch.update(doc(this.firestore, 'rooms', roomId), { lastActivityAt: serverTimestamp() });
+
+    await batch.commit();
   }
 
   // hasPendingWrites = a mudança ainda é local, o servidor não confirmou. As rules avaliam o estado

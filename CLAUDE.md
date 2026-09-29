@@ -41,6 +41,12 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - Só conta cadastrada cria sala (regra `sign_in_provider != 'anonymous'`); convidado só entra/vota.
 - Convidado anônimo perde o acesso ao trocar de navegador/limpar dados (novo uid, volta a `pending`).
 
-## Fora do escopo por enquanto
+## Encerramento automático (fase 2)
 
-Encerramento automático da sala (dono desconectado via heartbeat em Firestore; inatividade via TTL nativo). O schema já tem `ownerLastSeen`/`lastActivityAt` reservados, sem lógica.
+Duas verificações independentes, ambas em `RoomService` (constantes `HEARTBEAT_INTERVAL_MS`/`OWNER_GONE_TOLERANCE_MS`/`INACTIVITY_TOLERANCE_MS`/`DELETE_AFTER_CLOSE_MS`), decididas de verdade pelas rules (`isStale`, `isValidDeleteAt` em `firestore.rules`) comparando com o relógio do servidor — o cliente só tenta, nunca é a fonte de verdade:
+
+- **Dono ausente**: `room-view` grava `ownerLastSeen` a cada 45s enquanto o dono vê a própria sala aberta (`startOwnerHeartbeat`). Qualquer aprovado, a cada 30s (`checkStale`), tenta encerrar se passou 2 min sem heartbeat.
+- **Inatividade**: `lastActivityAt` é bumpado em toda ação real (entrar rodada, votar, revelar, trocar controlador, aprovar/remover membro). Sem nenhuma há 60 min, qualquer aprovado encerra — mesmo com o dono presente, de propósito: é sinal separado do heartbeat.
+- **Limpeza**: ao encerrar (manual ou automático), grava `deleteAt = agora + 24h` (rules validam entre agora e +48h). O **TTL nativo do Firestore precisa ser ativado uma vez, fora do app** (console ou `gcloud firestore fields ttls update deleteAt --collection-group=rooms --enable-ttl`), senão o campo é só um dado morto e nada apaga sozinho.
+
+Limitação aceita: se todo mundo desconectar ao mesmo tempo, ninguém sobra pra observar o heartbeat parado e disparar o encerramento — a sala fica `open` pra sempre (sem servidor não tem como detectar isso). Impacto é só armazenamento (1 doc por sala), irrelevante na cota gratuita.

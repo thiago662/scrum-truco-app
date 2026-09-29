@@ -24,6 +24,8 @@ export class Room {
     lastActivityAt?: any;
     ownerLastSeen?: any;
     createdAt?: any;
+    // TTL nativo do Firestore apaga a sala nesse instante, só é setado ao encerrar
+    deleteAt?: any;
 
     constructor(
         id?: string,

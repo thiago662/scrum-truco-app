@@ -32,6 +32,20 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
+    // deleteAt alimenta o TTL nativo do Firestore (config só via console/gcloud, fora do app):
+    // entre agora e 48h, nunca no passado nem longe demais — evita abuso sem exigir precisão.
+    function isValidDeleteAt() {
+      return request.resource.data.deleteAt is timestamp
+        && request.resource.data.deleteAt > request.time
+        && request.resource.data.deleteAt < request.time + duration.value(48, 'h');
+    }
+
+    // dono ausente (heartbeat parado) ou sala sem nenhuma ação há muito tempo
+    function isStale(roomData) {
+      return (roomData.ownerLastSeen is timestamp && request.time > roomData.ownerLastSeen + duration.value(2, 'm'))
+        || (roomData.lastActivityAt is timestamp && request.time > roomData.lastActivityAt + duration.value(60, 'm'));
+    }
+
     // ---------- users ----------
     match /users/{uid} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
@@ -72,20 +86,37 @@ service cloud.firestore {
              .affectedKeys().hasOnly([request.auth.uid]);
 
       // dono aprova/rejeita/remove membro
-      allow update: if isOwner(resource.data) && onlyChangedKeys(['members']);
+      allow update: if isOwner(resource.data) && onlyChangedKeys(['members', 'lastActivityAt']);
 
-      // dono encerra a sala
-      allow update: if isOwner(resource.data) && onlyChangedKeys(['status']);
+      // dono encerra a sala manualmente
+      allow update: if isOwner(resource.data)
+        && onlyChangedKeys(['status', 'deleteAt'])
+        && resource.data.status == 'open' && request.resource.data.status == 'closed'
+        && isValidDeleteAt();
 
       // dono elege/troca o controlador (só pra alguém já aprovado)
       allow update: if isOwner(resource.data)
-        && onlyChangedKeys(['controllerId'])
+        && onlyChangedKeys(['controllerId', 'lastActivityAt'])
         && resource.data.members[request.resource.data.controllerId].status == 'approved';
 
       // controlador (ou dono) aponta a rodada ativa
       allow update: if isFacilitator(resource.data)
         && onlyChangedKeys(['currentRoundId', 'lastActivityAt'])
         && resource.data.status == 'open';
+
+      // heartbeat do dono (fase 2: detecta dono ausente)
+      allow update: if isOwner(resource.data) && onlyChangedKeys(['ownerLastSeen']);
+
+      // qualquer aprovado registra atividade (voto, revelação), sem outro poder
+      allow update: if isApprovedMember(resource.data) && onlyChangedKeys(['lastActivityAt']);
+
+      // encerramento automático: qualquer aprovado pode encerrar, mas só quando o
+      // próprio servidor confirma que o dono está ausente ou a sala ficou inativa
+      allow update: if isApprovedMember(resource.data)
+        && onlyChangedKeys(['status', 'deleteAt'])
+        && resource.data.status == 'open' && request.resource.data.status == 'closed'
+        && isValidDeleteAt()
+        && isStale(resource.data);
 
       allow delete: if isOwner(resource.data);
     }

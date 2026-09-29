@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, PLATFORM_ID, ViewChild, inject } from '@a
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Unsubscribe } from '@angular/fire/firestore';
-import { RoomService } from '../room.service';
+import { RoomService, STALE_CHECK_INTERVAL_MS } from '../room.service';
 import { RoundService } from '../round.service';
 import { AuthService } from '../../auth/auth.service';
 import { Room, RoomMember } from '../../model/room.model';
@@ -41,6 +41,8 @@ export class RoomViewComponent implements OnInit, OnDestroy {
   private votesUnsub?: Unsubscribe;
   private votesRetries = 0;
   private platformId = inject(PLATFORM_ID);
+  private heartbeatStop?: () => void;
+  private staleCheckId?: ReturnType<typeof setInterval>;
 
   constructor(
     private router: Router,
@@ -83,7 +85,32 @@ export class RoomViewComponent implements OnInit, OnDestroy {
 
       this.syncUserIndex();
       this.syncRound();
+      this.syncHeartbeat();
     });
+
+    this.staleCheckId = setInterval(() => this.checkStale(), STALE_CHECK_INTERVAL_MS);
+  }
+
+  // Só o dono grava o heartbeat, e só enquanto está de fato vendo a própria sala aberta.
+  private syncHeartbeat() {
+    const shouldRun = this.isOwner && this.room?.status === 'open';
+
+    if (shouldRun && this.heartbeatStop == null) {
+      this.heartbeatStop = this.roomService.startOwnerHeartbeat(this.id);
+    } else if (!shouldRun && this.heartbeatStop != null) {
+      this.heartbeatStop();
+      this.heartbeatStop = undefined;
+    }
+  }
+
+  // Qualquer aprovado tenta encerrar por dono ausente/inatividade; as rules decidem de
+  // verdade comparando com o relógio do servidor, então uma tentativa de má-fé só falha.
+  private checkStale() {
+    if (this.room == null || this.myMember?.status !== 'approved') {
+      return;
+    }
+
+    this.roomService.checkStaleAndClose(this.room).catch(() => { });
   }
 
   // users/{uid}/rooms é só cache de "minhas salas": só escrito pelo próprio usuário (rules),
@@ -165,6 +192,8 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     this.unsub?.();
     this.stopRoundListeners();
     this.watchedRoundId = null;
+    this.heartbeatStop?.();
+    clearInterval(this.staleCheckId);
   }
 
   get isOwner(): boolean {

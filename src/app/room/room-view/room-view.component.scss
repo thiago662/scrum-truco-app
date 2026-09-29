@@ -1,0 +1,64 @@
+.mesa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.mesa__surface {
+    width: 100%;
+    max-width: 32rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 1.5rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    text-align: center;
+}
+
+.mesa__status {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.mesa__pauta {
+    font-size: 1.15rem;
+    margin-bottom: 0;
+}
+
+.mesa__results {
+    margin: 0.75rem 0 0;
+}
+
+.mesa__seats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.seat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 4.5rem;
+}
+
+.seat__name {
+    font-size: 0.9rem;
+    max-width: 6rem;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.seat__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+}

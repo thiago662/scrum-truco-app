@@ -1,42 +1,73 @@
 .playing-card {
     width: 3.5rem;
     aspect-ratio: 5 / 7;
+    perspective: 37.5rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 120ms ease;
+
+    &--selected {
+        transform: translateY(-4px);
+    }
+}
+
+.playing-card__inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 250ms ease;
+    transform-style: preserve-3d;
+
+    &--flipped {
+        transform: rotateY(180deg);
+    }
+}
+
+.playing-card__face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
     border-radius: 0.5rem;
     border: 2px solid var(--bs-border-color);
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-weight: 600;
     font-size: 1.1rem;
-    transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
-    cursor: pointer;
-    user-select: none;
-
-    &--selected {
-        border-color: var(--bs-primary);
-        background: var(--bs-primary);
-        color: #fff;
-        transform: translateY(-4px);
-    }
-
-    &--back {
-        background: var(--bs-primary);
-        border-color: var(--bs-primary);
-        color: #fff;
-        padding: 18%;
-        cursor: default;
-    }
 }
 
-// role="button"/tabindex ficam no host (<app-playing-card>, ver room-view), não em .playing-card
-:host(:focus-visible) .playing-card {
-    outline: 3px solid var(--bs-primary);
-    outline-offset: 2px;
+.playing-card--selected .playing-card__face--front {
+    border-color: var(--bs-primary);
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+.playing-card__face--back {
+    transform: rotateY(180deg);
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+    padding: 18%;
+    cursor: default;
 }
 
 .playing-card__mark {
     width: 100%;
     height: 100%;
+}
+
+// role="button"/tabindex ficam no host (<app-playing-card>, ver room-view), não no .playing-card
+:host(:focus-visible) .playing-card {
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .playing-card,
+    .playing-card__inner {
+        transition-duration: 1ms;
+    }
 }

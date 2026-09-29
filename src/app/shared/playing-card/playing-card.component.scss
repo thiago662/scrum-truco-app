@@ -1,0 +1,47 @@
+.playing-card {
+    width: 3.5rem;
+    aspect-ratio: 5 / 7;
+    border-radius: 0.5rem;
+    border: 2px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    cursor: pointer;
+    user-select: none;
+
+    &:focus-visible {
+        outline: 3px solid var(--bs-primary);
+        outline-offset: 2px;
+    }
+
+    &--sm {
+        width: 1.75rem;
+        padding: 12%;
+        font-size: 0.65rem;
+    }
+
+    &--selected {
+        border-color: var(--bs-primary);
+        background: var(--bs-primary);
+        color: #fff;
+        transform: translateY(-4px);
+    }
+
+    &--back {
+        background: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: #fff;
+        padding: 18%;
+        cursor: default;
+    }
+}
+
+.playing-card__mark {
+    width: 100%;
+    height: 100%;
+}

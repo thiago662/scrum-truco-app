@@ -34,7 +34,16 @@
             @if (canVote) {
                 <div class="d-flex flex-wrap gap-2 mb-3" id="deck">
                     @for (option of round.pointingType.options; track option.label) {
-                        <button type="button" class="btn" [class.btn-dark]="myVote?.value === option.label" [class.btn-outline-dark]="myVote?.value !== option.label" (click)="vote(option.label)">{{ option.label }}</button>
+                        <app-playing-card
+                            [label]="option.label"
+                            [selected]="myVote?.value === option.label"
+                            role="button"
+                            tabindex="0"
+                            [attr.aria-pressed]="myVote?.value === option.label"
+                            (click)="vote(option.label)"
+                            (keydown.enter)="vote(option.label)"
+                            (keydown.space)="$event.preventDefault(); vote(option.label)"
+                        ></app-playing-card>
                     }
                 </div>
             }
@@ -60,9 +69,9 @@
                     <span>
                         @if (round) {
                             @if (round.revealed) {
-                                <span class="badge text-bg-dark me-1">{{ votesLoaded ? voteLabel(member.uid) : '…' }}</span>
+                                <app-playing-card class="me-1" size="sm" [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>
                             } @else if (hasVoted(member.uid)) {
-                                <span class="badge text-bg-success me-1">votou</span>
+                                <app-playing-card class="me-1" size="sm" face="back" role="img" aria-label="votou"></app-playing-card>
                             } @else {
                                 <span class="badge text-bg-light border me-1">aguardando</span>
                             }

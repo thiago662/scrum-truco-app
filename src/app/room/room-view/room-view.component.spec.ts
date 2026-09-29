@@ -9,6 +9,8 @@ import { environment } from '../../../environments/environment';
 import { RoomViewComponent } from './room-view.component';
 import { RoundControlComponent } from '../round-control/round-control.component';
 import { PointingTypePickerComponent } from '../pointing-type-picker/pointing-type-picker.component';
+import { PlayingCardComponent } from '../../shared/playing-card/playing-card.component';
+import { LogoMarkComponent } from '../../shared/logo-mark/logo-mark.component';
 
 describe('RoomViewComponent', () => {
   let component: RoomViewComponent;
@@ -16,7 +18,7 @@ describe('RoomViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [RoomViewComponent, RoundControlComponent, PointingTypePickerComponent],
+      declarations: [RoomViewComponent, RoundControlComponent, PointingTypePickerComponent, PlayingCardComponent, LogoMarkComponent],
       imports: [RouterTestingModule, FormsModule],
       providers: [
         provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),

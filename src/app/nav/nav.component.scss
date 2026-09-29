@@ -1,0 +1,13 @@
+.navbar-brand.text-primary:hover,
+.navbar-brand.text-primary:focus {
+    color: var(--bs-primary);
+}
+
+.brand__mark {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.brand__text {
+    letter-spacing: -0.01em;
+}

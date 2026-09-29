@@ -7,6 +7,6 @@ import { Component, Input } from '@angular/core';
 })
 export class PlayingCardComponent {
   @Input() label = '';
-  @Input() face: 'front' | 'back' = 'front';
+  @Input() face: 'front' | 'back' | 'empty' = 'front';
   @Input() selected = false;
 }

@@ -41,4 +41,14 @@ describe('PlayingCardComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.playing-card').classList).toContain('playing-card--selected');
   });
+
+  it('face vazia não mostra rótulo nem marca, e some da acessibilidade', () => {
+    component.face = 'empty';
+    fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('.playing-card');
+    expect(card.classList).toContain('playing-card--empty');
+    expect(card.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.nativeElement.querySelector('.playing-card__label')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-logo-mark')).toBeNull();
+  });
 });

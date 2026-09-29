@@ -50,7 +50,7 @@
                             } @else if (hasVoted(member.uid)) {
                                 <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
                             } @else {
-                                <span class="badge text-bg-light border">aguardando</span>
+                                <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
                             }
                         }
                         <span class="seat__name">{{ member.name }}</span>

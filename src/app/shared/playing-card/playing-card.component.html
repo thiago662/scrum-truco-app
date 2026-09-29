@@ -1,10 +1,14 @@
-<div class="playing-card" [class.playing-card--selected]="selected">
-    <div class="playing-card__inner" [class.playing-card__inner--flipped]="face === 'back'">
-        <div class="playing-card__face playing-card__face--front" [attr.aria-hidden]="face === 'back' ? true : null">
-            <span class="playing-card__label">{{ label }}</span>
-        </div>
-        <div class="playing-card__face playing-card__face--back" [attr.aria-hidden]="face === 'front' ? true : null">
-            <app-logo-mark class="playing-card__mark"></app-logo-mark>
+@if (face === 'empty') {
+    <div class="playing-card playing-card--empty" aria-hidden="true"></div>
+} @else {
+    <div class="playing-card" [class.playing-card--selected]="selected">
+        <div class="playing-card__inner" [class.playing-card__inner--flipped]="face === 'back'">
+            <div class="playing-card__face playing-card__face--front" [attr.aria-hidden]="face === 'back' ? true : null">
+                <span class="playing-card__label">{{ label }}</span>
+            </div>
+            <div class="playing-card__face playing-card__face--back" [attr.aria-hidden]="face === 'front' ? true : null">
+                <app-logo-mark class="playing-card__mark"></app-logo-mark>
+            </div>
         </div>
     </div>
-</div>
+}

@@ -9,5 +9,4 @@ export class PlayingCardComponent {
   @Input() label = '';
   @Input() face: 'front' | 'back' = 'front';
   @Input() selected = false;
-  @Input() size: 'sm' | 'md' = 'md';
 }

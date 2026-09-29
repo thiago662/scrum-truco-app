@@ -14,17 +14,6 @@
     cursor: pointer;
     user-select: none;
 
-    &:focus-visible {
-        outline: 3px solid var(--bs-primary);
-        outline-offset: 2px;
-    }
-
-    &--sm {
-        width: 1.75rem;
-        padding: 12%;
-        font-size: 0.65rem;
-    }
-
     &--selected {
         border-color: var(--bs-primary);
         background: var(--bs-primary);
@@ -39,6 +28,12 @@
         padding: 18%;
         cursor: default;
     }
+}
+
+// role="button"/tabindex ficam no host (<app-playing-card>, ver room-view), não em .playing-card
+:host(:focus-visible) .playing-card {
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 2px;
 }
 
 .playing-card__mark {

@@ -4,6 +4,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { AuthModalService } from '../auth/auth-modal.service';
+import { ThemeService } from '../shared/theme.service';
 
 @Component({
   selector: 'app-nav',
@@ -36,7 +37,16 @@ export class NavComponent implements OnInit, OnDestroy {
     private modalService: NgbModal,
     private authService: AuthService,
     private authModalService: AuthModalService,
+    private themeService: ThemeService,
   ) { }
+
+  get isDarkTheme(): boolean {
+    return this.themeService.current === 'dark';
+  }
+
+  toggleTheme() {
+    this.themeService.toggle();
+  }
 
   ngOnInit() {
     this.userSub = this.authService.currentUser$.subscribe((user) => {

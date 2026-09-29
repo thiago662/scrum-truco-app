@@ -11,11 +11,14 @@
   <script>
     // Roda antes do Angular carregar, pra não piscar claro antes de escurecer.
     // Bootstrap 5.3 não segue o SO por conta própria, precisa desse atributo setado.
+    // Escolha manual (localStorage, ver ThemeService) tem prioridade; sem ela, segue o SO.
     (function () {
+      var stored = null;
+      try { stored = localStorage.getItem('theme'); } catch (e) { }
       var media = window.matchMedia('(prefers-color-scheme: dark)');
-      var apply = function () { document.documentElement.setAttribute('data-bs-theme', media.matches ? 'dark' : 'light'); };
+      var apply = function () { document.documentElement.setAttribute('data-bs-theme', stored || (media.matches ? 'dark' : 'light')); };
       apply();
-      media.addEventListener('change', apply);
+      if (!stored) { media.addEventListener('change', apply); }
     })();
   </script>
 </head>

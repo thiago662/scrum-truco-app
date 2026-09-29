@@ -8,6 +8,16 @@
   <!-- <link rel="icon" type="image/x-icon" href="favicon.ico"> -->
   <link rel="icon" type="image/x-icon" href="./assets/poker-logo-preto.png">
   <script src="https://kit.fontawesome.com/8b2b26f0e4.js" crossorigin="anonymous"></script>
+  <script>
+    // Roda antes do Angular carregar, pra não piscar claro antes de escurecer.
+    // Bootstrap 5.3 não segue o SO por conta própria, precisa desse atributo setado.
+    (function () {
+      var media = window.matchMedia('(prefers-color-scheme: dark)');
+      var apply = function () { document.documentElement.setAttribute('data-bs-theme', media.matches ? 'dark' : 'light'); };
+      apply();
+      media.addEventListener('change', apply);
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

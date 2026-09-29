@@ -1,7 +1,8 @@
-/* You can add global styles to this file, and also import other style files */
+/* Paleta Scrum Truco: branco predominante + vermelho de baralho como acento, com tema escuro
+   nativo do Bootstrap 5.3 (data-bs-theme, alternado via prefers-color-scheme em index.html). */
+$primary: #ee4b2b;
+$body-bg: #fafafa;
+$body-bg-dark: #171717;
+$body-color-dark: #f2f2f2;
+
 @import "bootstrap/scss/bootstrap";
-/*
-or import only the bootstrap scss files that your application actually needs,
-as described in the Bootstrap customization guide:
-https://getbootstrap.com/docs/5.2/customize/sass/#importing
-*/

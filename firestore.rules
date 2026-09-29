@@ -32,8 +32,9 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
-    // deleteAt alimenta o TTL nativo do Firestore (config só via console/gcloud, fora do app):
-    // entre agora e 48h, nunca no passado nem longe demais — evita abuso sem exigir precisão.
+    // deleteAt alimenta scripts/cleanup-rooms.mjs (cron do GitHub Actions) — o TTL nativo do
+    // Firestore exigiria o plano pago Blaze, então a faxina é feita por fora, não por ele.
+    // Entre agora e 48h, nunca no passado nem longe demais — evita abuso sem exigir precisão.
     function isValidDeleteAt() {
       return request.resource.data.deleteAt is timestamp
         && request.resource.data.deleteAt > request.time

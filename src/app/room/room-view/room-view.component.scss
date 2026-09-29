@@ -37,6 +37,21 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 1.25rem;
+
+    // até MAX_CIRCULAR_SEATS (room-view.component.ts): assentos de verdade em volta da mesa,
+    // um por ângulo calculado no componente. Com mais gente, cai pro flex-wrap acima, que
+    // sempre coube (só não parece "mesa redonda").
+    &--circle {
+        position: relative;
+        display: block;
+        // quadrado com tamanho explícito, não "width: 100%" — o pai (.mesa, flex com
+        // align-items: center) encolhe filhos pro tamanho do conteúdo, o que fazia o
+        // left/top: 50% dos assentos apontar pro centro de uma largura errada.
+        // +9rem (não +6rem): cada lado precisa de espaço pra meio assento (carta 4.9rem +
+        // nome + emblemas ≈ 8.2rem de altura), senão o assento do topo esbarra na mesa__surface
+        width: calc(var(--radius) * 2 + 9rem);
+        height: calc(var(--radius) * 2 + 9rem);
+    }
 }
 
 .seat {
@@ -45,6 +60,13 @@
     align-items: center;
     gap: 0.35rem;
     min-width: 4.5rem;
+}
+
+.mesa__seats--circle .seat {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1));
 }
 
 .seat__name {

@@ -13,6 +13,10 @@ import { RoundControlComponent } from '../round-control/round-control.component'
 
 type MemberRow = RoomMember & { uid: string };
 
+// acima disso o círculo fica pequeno/apertado demais (cartão+nome de cada assento não cabe
+// no arco); cai pra grade normal, que sempre coube, só não parece "mesa redonda"
+const MAX_CIRCULAR_SEATS = 12;
+
 @Component({
   selector: 'app-room-view',
   templateUrl: './room-view.component.html',
@@ -219,6 +223,20 @@ export class RoomViewComponent implements OnInit, OnDestroy {
 
   get pendingMembers(): MemberRow[] {
     return this.members.filter((member) => member.status === 'pending');
+  }
+
+  get useCircularSeats(): boolean {
+    return this.approvedMembers.length > 0 && this.approvedMembers.length <= MAX_CIRCULAR_SEATS;
+  }
+
+  // cresce com a quantidade de gente, senão os assentos vizinhos ficam próximos demais e
+  // o nome/carta de um esbarra no outro conforme o ângulo entre eles diminui
+  get seatRingRadiusRem(): number {
+    return Math.max(7, this.approvedMembers.length * 1.3);
+  }
+
+  seatAngleDeg(index: number, total: number): number {
+    return (360 / total) * index;
   }
 
   get votesLoaded(): boolean {

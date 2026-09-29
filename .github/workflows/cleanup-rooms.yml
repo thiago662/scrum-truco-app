@@ -14,9 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # firebase-admin@14 exige Node >=22 (a lib não instala corretamente em Node 20)
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - run: npm install --no-save firebase-admin@14.5.0
 

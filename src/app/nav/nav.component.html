@@ -10,7 +10,15 @@
 		<div class="collapse navbar-collapse justify-content-center" [ngbCollapse]="isMenuCollapsed">
             <ng-container *ngTemplateOutlet="contentnavbar"></ng-container>
 		</div>
-        <div class="col-md-3 text-end">
+        <div class="col-md-3 text-end d-flex justify-content-end align-items-center gap-2">
+            <button
+                class="btn btn-outline-primary rounded-circle"
+                type="button"
+                (click)="toggleTheme()"
+                [attr.aria-label]="isDarkTheme ? 'Mudar pro tema claro' : 'Mudar pro tema escuro'"
+            >
+                <i class="fas" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
+            </button>
             <button class="btn btn-primary rounded-circle" type="button" (click)="open(contentmodal)"><i class="fas fa-user"></i></button>
         </div>
 	</div>

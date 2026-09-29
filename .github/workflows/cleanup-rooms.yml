@@ -1,0 +1,28 @@
+name: Faxina de salas encerradas
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # todo dia às 06:00 UTC (03:00 em horário de Brasília)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --no-save firebase-admin@14.5.0
+
+      # Substituto ao TTL nativo do Firestore (exigiria plano pago Blaze): a conta de serviço
+      # ignora firestore.rules e apaga direto as salas encerradas com deleteAt já vencido.
+      - name: Apagar salas encerradas vencidas
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/cleanup-rooms.mjs

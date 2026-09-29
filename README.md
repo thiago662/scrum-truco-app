@@ -21,6 +21,15 @@ O workflow `.github/workflows/deploy-pages.yml` roda checagem de tipos, testes (
 
 A config vai no JS publicado (é assim em qualquer app web Firebase); o secret só a mantém fora do código versionado. Para testar o build de publicação localmente: `npm run build:pages` (saída em `dist/pages/browser`).
 
+## Faxina de salas encerradas
+
+`.github/workflows/cleanup-rooms.yml` roda toda noite (e também sob demanda em Actions > Faxina de salas encerradas > Run workflow) e apaga salas encerradas com o prazo vencido — é o substituto ao TTL nativo do Firestore, que exigiria o plano pago Blaze. Configuração única:
+
+1. Firebase Console > ⚙️ Configurações do projeto > **Contas de serviço** > **Gerar nova chave privada** (baixa um `.json`).
+2. Settings > Secrets and variables > Actions > **New repository secret**: nome `FIREBASE_SERVICE_ACCOUNT`, valor o conteúdo inteiro desse arquivo.
+
+Essa credencial ignora `firestore.rules` — guarde-a só como secret, nunca commitada.
+
 `firebase.config.ts` e `.firebaserc` estão no `.gitignore`. A config do Firebase não é segredo (vai no JS do site), o que protege os dados são as regras do Firestore (`firestore.rules`) e a restrição da API key no Google Cloud Console.
 
 Este projeto foi gerado com [Angular CLI](https://github.com/angular/angular-cli) versão 17.1.0.

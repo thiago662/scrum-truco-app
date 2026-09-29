@@ -24,7 +24,8 @@
         </button>
 
         <h5 class="visually-hidden">Participantes</h5>
-        <div class="mesa mb-3">
+
+        <ng-template #surfaceTpl>
             <div class="mesa__surface">
                 @if (round) {
                     <h6 class="mesa__status">{{ round.revealed ? 'Votos revelados' : 'Em votação' }}</h6>
@@ -40,39 +41,67 @@
                     <p class="mesa__pauta text-body-secondary">Nenhuma rodada em andamento.</p>
                 }
             </div>
+        </ng-template>
 
-            <div
-                class="mesa__seats"
-                [class.mesa__seats--circle]="useCircularSeats"
-                [style.--radius.rem]="useCircularSeats ? seatRingRadiusRem : null"
-                id="participants"
-            >
-                @for (member of approvedMembers; track member.uid; let i = $index; let total = $count) {
-                    <div class="seat" [style.--angle.deg]="useCircularSeats ? seatAngleDeg(i, total) : null">
-                        @if (round) {
-                            @if (round.revealed) {
-                                <app-playing-card [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>
-                            } @else if (hasVoted(member.uid)) {
-                                <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
-                            } @else {
-                                <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
-                            }
-                        }
-                        <span class="seat__name">{{ member.name }}</span>
-                        <span class="seat__badges">
-                            @if (member.uid === room?.controllerId) {
-                                <span class="badge bg-primary">Controlador</span>
-                            }
-                            @if (member.role === 'owner') {
-                                <span class="badge bg-secondary">Dono</span>
-                            }
-                            @if (isOwner && member.role !== 'owner' && member.uid !== room?.controllerId) {
-                                <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeMember(member.uid)">Remover</button>
-                            }
-                        </span>
-                    </div>
+        <ng-template #seatTpl let-member>
+            <div class="seat">
+                @if (round) {
+                    @if (round.revealed) {
+                        <app-playing-card [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>
+                    } @else if (hasVoted(member.uid)) {
+                        <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
+                    } @else {
+                        <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
+                    }
                 }
+                <span class="seat__name">{{ member.name }}</span>
+                <span class="seat__badges">
+                    @if (member.uid === room?.controllerId) {
+                        <span class="badge bg-primary">Controlador</span>
+                    }
+                    @if (member.role === 'owner') {
+                        <span class="badge bg-secondary">Dono</span>
+                    }
+                    @if (isOwner && member.role !== 'owner' && member.uid !== room?.controllerId) {
+                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeMember(member.uid)">Remover</button>
+                    }
+                </span>
             </div>
+        </ng-template>
+
+        <div class="mesa mb-3">
+            @if (useTableSeats && seatEdges; as edges) {
+                <div class="mesa__table" id="participants">
+                    <div class="mesa__edge mesa__edge--top">
+                        @for (member of edges.top; track member.uid) {
+                            <ng-container *ngTemplateOutlet="seatTpl; context: { $implicit: member }"></ng-container>
+                        }
+                    </div>
+                    <div class="mesa__edge mesa__edge--left">
+                        @for (member of edges.left; track member.uid) {
+                            <ng-container *ngTemplateOutlet="seatTpl; context: { $implicit: member }"></ng-container>
+                        }
+                    </div>
+                    <ng-container *ngTemplateOutlet="surfaceTpl"></ng-container>
+                    <div class="mesa__edge mesa__edge--right">
+                        @for (member of edges.right; track member.uid) {
+                            <ng-container *ngTemplateOutlet="seatTpl; context: { $implicit: member }"></ng-container>
+                        }
+                    </div>
+                    <div class="mesa__edge mesa__edge--bottom">
+                        @for (member of edges.bottom; track member.uid) {
+                            <ng-container *ngTemplateOutlet="seatTpl; context: { $implicit: member }"></ng-container>
+                        }
+                    </div>
+                </div>
+            } @else {
+                <ng-container *ngTemplateOutlet="surfaceTpl"></ng-container>
+                <div class="mesa__seats" id="participants">
+                    @for (member of approvedMembers; track member.uid) {
+                        <ng-container *ngTemplateOutlet="seatTpl; context: { $implicit: member }"></ng-container>
+                    }
+                </div>
+            }
         </div>
 
         @if (canVote) {

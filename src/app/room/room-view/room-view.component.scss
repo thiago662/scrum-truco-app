@@ -32,26 +32,59 @@
     margin: 0.75rem 0 0;
 }
 
+// fallback pra MAX_TABLE_SEATS+ (room-view.component.ts): grade normal, sempre coube,
+// só não parece "mesa".
 .mesa__seats {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 1.25rem;
+}
 
-    // até MAX_CIRCULAR_SEATS (room-view.component.ts): assentos de verdade em volta da mesa,
-    // um por ângulo calculado no componente. Com mais gente, cai pro flex-wrap acima, que
-    // sempre coube (só não parece "mesa redonda").
-    &--circle {
-        position: relative;
-        display: block;
-        // quadrado com tamanho explícito, não "width: 100%" — o pai (.mesa, flex com
-        // align-items: center) encolhe filhos pro tamanho do conteúdo, o que fazia o
-        // left/top: 50% dos assentos apontar pro centro de uma largura errada.
-        // +9rem (não +6rem): cada lado precisa de espaço pra meio assento (carta 4.9rem +
-        // nome + emblemas ≈ 8.2rem de altura), senão o assento do topo esbarra na mesa__surface
-        width: calc(var(--radius) * 2 + 9rem);
-        height: calc(var(--radius) * 2 + 9rem);
-    }
+// até MAX_TABLE_SEATS: assentos nas 4 bordas em volta da mesa__surface, que fica no meio.
+// Colunas auto (não largura fixa): coluna vazia (esquerda/direita sem ninguém) colapsa pro
+// conteúdo (0), mas o gap do grid entre colunas continua reservando ~1.25rem de cada lado
+// mesmo assim — é a margem lateral da mesa quando só tem gente no topo/base, não um bug.
+.mesa__table {
+    display: grid;
+    grid-template-areas:
+        "top    top    top"
+        "left   center right"
+        "bottom bottom bottom";
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.mesa__table .mesa__surface {
+    grid-area: center;
+    margin: 0 auto;
+}
+
+.mesa__edge {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.mesa__edge--top {
+    grid-area: top;
+}
+
+.mesa__edge--bottom {
+    grid-area: bottom;
+}
+
+.mesa__edge--left {
+    grid-area: left;
+    flex-direction: column;
+}
+
+.mesa__edge--right {
+    grid-area: right;
+    flex-direction: column;
 }
 
 .seat {
@@ -60,13 +93,6 @@
     align-items: center;
     gap: 0.35rem;
     min-width: 4.5rem;
-}
-
-.mesa__seats--circle .seat {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1));
 }
 
 .seat__name {

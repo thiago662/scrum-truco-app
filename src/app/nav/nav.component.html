@@ -2,9 +2,9 @@
 	<div class="container">
         <button class="navbar-toggler" type="button" (click)="openCanvasEnd(contentnavbar)"><i class="fas fa-bars"></i></button>
         <div class="col-md-3">
-            <a class="navbar-brand d-flex align-items-center gap-2" [routerLink]="'.'">
-                <app-logo-mark style="width: 22px; height: 22px;"></app-logo-mark>
-                Scrum Truco
+            <a class="navbar-brand text-primary d-flex align-items-center gap-2" [routerLink]="'.'">
+                <app-logo-mark class="brand__mark"></app-logo-mark>
+                <span class="brand__text fw-bold">Scrum Truco</span>
             </a>
         </div>
 		<div class="collapse navbar-collapse justify-content-center" [ngbCollapse]="isMenuCollapsed">

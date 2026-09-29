@@ -41,9 +41,14 @@
                 }
             </div>
 
-            <div class="mesa__seats" id="participants">
-                @for (member of approvedMembers; track member.uid) {
-                    <div class="seat">
+            <div
+                class="mesa__seats"
+                [class.mesa__seats--circle]="useCircularSeats"
+                [style.--radius.rem]="useCircularSeats ? seatRingRadiusRem : null"
+                id="participants"
+            >
+                @for (member of approvedMembers; track member.uid; let i = $index; let total = $count) {
+                    <div class="seat" [style.--angle.deg]="useCircularSeats ? seatAngleDeg(i, total) : null">
                         @if (round) {
                             @if (round.revealed) {
                                 <app-playing-card [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>

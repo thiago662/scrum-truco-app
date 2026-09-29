@@ -19,6 +19,8 @@ import { RoomSearchComponent } from './room/room-search/room-search.component';
 import { RoomAddComponent } from './room/room-add/room-add.component';
 import { PointingTypePickerComponent } from './room/pointing-type-picker/pointing-type-picker.component';
 import { RoundControlComponent } from './room/round-control/round-control.component';
+import { LogoMarkComponent } from './shared/logo-mark/logo-mark.component';
+import { PlayingCardComponent } from './shared/playing-card/playing-card.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +33,8 @@ import { RoundControlComponent } from './room/round-control/round-control.compon
     RoomAddComponent,
     PointingTypePickerComponent,
     RoundControlComponent,
+    LogoMarkComponent,
+    PlayingCardComponent,
   ],
   imports: [
     BrowserModule,

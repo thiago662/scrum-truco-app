@@ -7,6 +7,7 @@ import { provideAuth, getAuth } from '@angular/fire/auth';
 import { environment } from '../../environments/environment';
 
 import { NavComponent } from './nav.component';
+import { LogoMarkComponent } from '../shared/logo-mark/logo-mark.component';
 
 describe('NavComponent', () => {
   let component: NavComponent;
@@ -14,7 +15,7 @@ describe('NavComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [NavComponent],
+      declarations: [NavComponent, LogoMarkComponent],
       imports: [RouterTestingModule, NgbModule],
       providers: [
         provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),

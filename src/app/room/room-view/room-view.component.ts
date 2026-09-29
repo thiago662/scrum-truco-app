@@ -13,9 +13,12 @@ import { RoundControlComponent } from '../round-control/round-control.component'
 
 type MemberRow = RoomMember & { uid: string };
 
-// acima disso o círculo fica pequeno/apertado demais (cartão+nome de cada assento não cabe
-// no arco); cai pra grade normal, que sempre coube, só não parece "mesa redonda"
-const MAX_CIRCULAR_SEATS = 12;
+// acima disso a mesa fica pequena/apertada demais (cartão+nome de cada assento não cabe
+// nas bordas); cai pra grade normal, que sempre coube, só não parece "mesa"
+const MAX_TABLE_SEATS = 12;
+
+type SeatEdges = { top: MemberRow[]; left: MemberRow[]; right: MemberRow[]; bottom: MemberRow[] };
+const EDGE_CYCLE: (keyof SeatEdges)[] = ['top', 'bottom', 'left', 'right'];
 
 @Component({
   selector: 'app-room-view',
@@ -225,18 +228,23 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     return this.members.filter((member) => member.status === 'pending');
   }
 
-  get useCircularSeats(): boolean {
-    return this.approvedMembers.length > 0 && this.approvedMembers.length <= MAX_CIRCULAR_SEATS;
+  get useTableSeats(): boolean {
+    return this.approvedMembers.length > 0 && this.approvedMembers.length <= MAX_TABLE_SEATS;
   }
 
-  // cresce com a quantidade de gente, senão os assentos vizinhos ficam próximos demais e
-  // o nome/carta de um esbarra no outro conforme o ângulo entre eles diminui
-  get seatRingRadiusRem(): number {
-    return Math.max(7, this.approvedMembers.length * 1.3);
-  }
+  // eu sempre na borda de baixo, centralizado; o resto se espalha em rodízio topo/baixo/
+  // esquerda/direita (cada pessoa nova entra na próxima borda do ciclo, não acumula tudo
+  // no topo/baixo antes de usar as laterais)
+  get seatEdges(): SeatEdges {
+    const edges: SeatEdges = { top: [], left: [], right: [], bottom: [] };
+    const others = this.approvedMembers.filter((member) => member.uid !== this.userId);
+    others.forEach((member, i) => edges[EDGE_CYCLE[i % EDGE_CYCLE.length]].push(member));
 
-  seatAngleDeg(index: number, total: number): number {
-    return (360 / total) * index;
+    const me = this.approvedMembers.find((member) => member.uid === this.userId);
+    if (me) {
+      edges.bottom.splice(Math.floor(edges.bottom.length / 2), 0, me);
+    }
+    return edges;
   }
 
   get votesLoaded(): boolean {

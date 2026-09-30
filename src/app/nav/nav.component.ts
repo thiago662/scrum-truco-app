@@ -1,6 +1,6 @@
 import { Component, inject, TemplateRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { NgbOffcanvas, NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-import { FormGroup, FormControl } from '@angular/forms';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { AuthModalService } from '../auth/auth-modal.service';
@@ -20,10 +20,12 @@ export class NavComponent implements OnInit, OnDestroy {
 
   userForm = new FormGroup({
     id: new FormControl(''),
-    name: new FormControl(''),
-    companyName: new FormControl(''),
-    email: new FormControl(''),
-    password: new FormControl(''),
+    name: new FormControl('', Validators.required),
+    companyName: new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
+    // 6 pra bater com o mínimo que o próprio Firebase Auth já exige -- não faz sentido
+    // o client aceitar algo que o servidor vai rejeitar de qualquer forma
+    password: new FormControl('', [Validators.required, Validators.minLength(6)]),
   });
   isLogged = false;
   mode: 'login' | 'create' = 'login';
@@ -142,6 +144,20 @@ export class NavComponent implements OnInit, OnDestroy {
     await this.authService.logout();
 
     this.mode = 'login';
+  }
+
+  // só valida os campos relevantes pro modo atual -- password/name/companyName vazios
+  // não podem travar o botão de Entrar, por exemplo, já que nem aparecem nessa aba
+  get loginInvalid(): boolean {
+    return this.userForm.controls.email.invalid || this.userForm.controls.password.invalid;
+  }
+
+  get createInvalid(): boolean {
+    return this.userForm.invalid;
+  }
+
+  get profileInvalid(): boolean {
+    return this.userForm.controls.name.invalid || this.userForm.controls.companyName.invalid;
   }
 
   get profileInitial(): string {

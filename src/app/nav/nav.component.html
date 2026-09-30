@@ -77,7 +77,7 @@
                     <input type="email" class="form-control" id="email" formControlName="email" readonly>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 mb-3">Salvar alterações</button>
+                <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="profileInvalid">Salvar alterações</button>
 
                 <div class="danger-zone">
                     <p class="danger-zone__label">Conta</p>
@@ -110,7 +110,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary w-100">Criar conta</button>
+                <button type="submit" class="btn btn-primary w-100" [disabled]="createInvalid">Criar conta</button>
             </div>
         } @else {
             <div class="modal-body">
@@ -127,7 +127,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                <button type="submit" class="btn btn-primary w-100" [disabled]="loginInvalid">Entrar</button>
             </div>
         }
     </form>

@@ -38,7 +38,9 @@ for (const roomDoc of snapshot.docs) {
     }));
 
     await db.recursiveDelete(roomDoc.ref);
-    console.log(`Apagada: ${roomDoc.id} (${room.title ?? ''})`);
+    // sem o título aqui de propósito: repo é público, log do Actions também -- título de
+    // sala pode ter nome de projeto/cliente que o dono não quer nesse histórico
+    console.log(`Apagada: ${roomDoc.id}`);
   } catch (error) {
     failures++;
     console.error(`Falhou ao apagar ${roomDoc.id}: ${error.message}`);

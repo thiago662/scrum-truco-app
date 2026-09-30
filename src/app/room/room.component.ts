@@ -99,9 +99,10 @@ export class RoomComponent implements OnInit, OnDestroy {
     const user = await this.authService.getCurrentUser();
 
     // convidado anônimo (loginAsGuest, criado ao visitar uma sala sem sessão) não tem
-    // "minhas salas" -- só entra em sala por link, nunca aparece nesse índice. loaded=true
-    // aqui pra cair no estado vazio em vez de grade em branco pra sempre -- a rota /rooms
-    // ainda não tem guard nenhum (chega isGuest daqui), só bloqueia visualmente, por enquanto
+    // "minhas salas" -- só entra em sala por link, nunca aparece nesse índice. loggedInGuard
+    // (app-routing.module.ts) já bloqueia a rota pra esse caso; este check aqui é defensivo
+    // (mesmo critério, caso o componente seja alcançado por outro caminho no futuro).
+    // loaded=true pra cair no estado vazio em vez de grade em branco pra sempre.
     if (user?.id == null || user.isGuest) {
       this.loaded = true;
       return;

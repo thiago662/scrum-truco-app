@@ -5,6 +5,7 @@ import { RoomComponent } from './room/room.component';
 import { RoomViewComponent } from './room/room-view/room-view.component';
 import { RoomSearchComponent } from './room/room-search/room-search.component';
 import { RoomAddComponent } from './room/room-add/room-add.component';
+import { loggedInGuard } from './auth/logged-in.guard';
 
 const routes: Routes = [
   {
@@ -14,6 +15,7 @@ const routes: Routes = [
   {
     path: 'rooms',
     component: RoomComponent,
+    canActivate: [loggedInGuard],
   },
   {
     path: 'rooms/search',
@@ -22,6 +24,7 @@ const routes: Routes = [
   {
     path: 'rooms/add',
     component: RoomAddComponent,
+    canActivate: [loggedInGuard],
   },
   {
     path: 'rooms/:id',

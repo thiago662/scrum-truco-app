@@ -1,7 +1,21 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { RoomService } from '../room.service';
-import { Room } from '../../model/room.model';
+
+// aceita tanto o id puro quanto um link colado (.../rooms/<id>?utm=...) -- pega só o
+// último segmento não vazio do caminho, sem query string/hash, que é o id nos dois casos
+function extractId(input: string): string {
+  const trimmed = input.trim();
+
+  try {
+    const segments = new URL(trimmed).pathname.split('/').filter(Boolean);
+    return segments[segments.length - 1] ?? trimmed;
+  } catch {
+    // não é uma URL válida (ex: só o código colado) -- mesmo assim tira query/hash à mão
+    const segments = trimmed.split(/[?#]/)[0].split('/').filter(Boolean);
+    return segments[segments.length - 1] ?? trimmed;
+  }
+}
 
 @Component({
   selector: 'app-room-search',
@@ -10,7 +24,8 @@ import { Room } from '../../model/room.model';
 })
 export class RoomSearchComponent {
   id = '';
-  room: Room | undefined;
+  errorMessage = '';
+  searching = false;
 
   constructor(
     private router: Router,
@@ -18,10 +33,26 @@ export class RoomSearchComponent {
   ) { }
 
   async findClass() {
-    this.room = await this.roomService.getRoom(this.id);
-
-    if (this.room != undefined) {
-      this.router.navigate(['/rooms/' + this.id]);
+    if (this.searching) {
+      return;
     }
+
+    this.errorMessage = '';
+
+    const id = extractId(this.id);
+    if (!id) {
+      return;
+    }
+
+    this.searching = true;
+    const room = await this.roomService.getRoom(id);
+    this.searching = false;
+
+    if (room == null) {
+      this.errorMessage = 'Sala não encontrada. Confira o link ou código.';
+      return;
+    }
+
+    this.router.navigate(['/rooms', id]);
   }
 }

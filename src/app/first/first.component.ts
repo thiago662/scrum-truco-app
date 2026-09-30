@@ -1,4 +1,4 @@
-import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthModalService } from '../auth/auth-modal.service';
@@ -9,8 +9,9 @@ import { AuthService } from '../auth/auth.service';
   templateUrl: './first.component.html',
   styleUrl: './first.component.scss'
 })
-export class FirstComponent implements OnInit {
+export class FirstComponent implements OnInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
+  private destroyed = false;
 
   constructor(
     private authModalService: AuthModalService,
@@ -27,9 +28,15 @@ export class FirstComponent implements OnInit {
 
     const user = await this.authService.getCurrentUser();
 
-    if (user != null) {
+    // se o componente já foi destruído (usuário navegou pra outro lugar enquanto a
+    // promise resolvia), não força redirect por cima de onde a pessoa já está
+    if (user != null && !this.destroyed) {
       this.router.navigate(['/rooms']);
     }
+  }
+
+  ngOnDestroy() {
+    this.destroyed = true;
   }
 
   openLogin() {

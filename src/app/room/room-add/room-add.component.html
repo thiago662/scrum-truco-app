@@ -1,13 +1,22 @@
-<form [formGroup]="roomForm">
-    <div class="mb-3">
-        <label for="title" class="form-label">Titulo</label>
-        <input type="text" class="form-control" id="title" formControlName="title">
-    </div>
-    <div class="mb-3">
-        <label for="description" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="description" formControlName="description">
-    </div>
-    <div class="mb-3 text-center">
-        <button type="submit" class="btn btn-primary" (click)="createRoom()">Salvar</button>
-    </div>
-</form>
+<div class="form-page">
+    <h1 class="h3">Criar sala</h1>
+    <p class="text-body-secondary">Dê um nome pra sala. A descrição é opcional.</p>
+
+    <form [formGroup]="roomForm" class="form-page__card" (ngSubmit)="createRoom()">
+        <div class="mb-3">
+            <label for="title" class="form-label">Título</label>
+            <input type="text" class="form-control" id="title" formControlName="title" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Descrição</label>
+            <input type="text" class="form-control" id="description" formControlName="description">
+        </div>
+        <button
+            type="submit"
+            class="btn btn-primary w-100"
+            [disabled]="!roomForm.value.title?.trim()"
+        >
+            Criar sala
+        </button>
+    </form>
+</div>

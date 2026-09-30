@@ -8,8 +8,10 @@ function extractId(input: string): string {
   const trimmed = input.trim();
 
   try {
+    // URL válida mas sem segmento de path (ex: só o domínio) -- '' pra não devolver a url
+    // inteira como "id" e a busca tentar um doc com caminho malformado no Firestore
     const segments = new URL(trimmed).pathname.split('/').filter(Boolean);
-    return segments[segments.length - 1] ?? trimmed;
+    return segments[segments.length - 1] ?? '';
   } catch {
     // não é uma URL válida (ex: só o código colado) -- mesmo assim tira query/hash à mão
     const segments = trimmed.split(/[?#]/)[0].split('/').filter(Boolean);
@@ -41,6 +43,7 @@ export class RoomSearchComponent {
 
     const id = extractId(this.id);
     if (!id) {
+      this.errorMessage = 'Sala não encontrada. Confira o link ou código.';
       return;
     }
 

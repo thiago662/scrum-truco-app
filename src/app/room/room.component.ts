@@ -140,8 +140,11 @@ export class RoomComponent implements OnInit, OnDestroy {
         }
       },
       // erro do próprio listener (users/{uid}/rooms) -- sem isso, RxJS relança sem
-      // handler e loaded/loadError nunca atualizam, grade fica em branco pra sempre
+      // handler e loaded/loadError nunca atualizam, grade fica em branco pra sempre.
+      // Invalida o token também: sem isso, um next() lento ainda em voo pode resolver
+      // depois do erro e sobrescrever loadError=false com dado desatualizado
       error: () => {
+        this.requestToken++;
         this.loadError = true;
         this.loaded = true;
       },

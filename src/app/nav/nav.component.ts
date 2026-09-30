@@ -145,7 +145,7 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   get profileInitial(): string {
-    const name = this.userForm.value.name || this.userForm.value.email || '';
+    const name = this.userForm.value.name?.trim() || this.userForm.value.email?.trim() || '';
     return name.charAt(0).toUpperCase() || '?';
   }
 

@@ -117,6 +117,9 @@
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
                 }
+                @if (resetMessage) {
+                    <div class="alert alert-success">{{ resetMessage }}</div>
+                }
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" formControlName="email">
@@ -125,6 +128,9 @@
                     <label for="password" class="form-label">Senha</label>
                     <input type="password" class="form-control" id="password" formControlName="password">
                 </div>
+                <button type="button" class="btn btn-link btn-sm p-0" [disabled]="userForm.controls.email.invalid" (click)="sendPasswordReset()">
+                    Esqueci minha senha
+                </button>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-primary w-100" [disabled]="loginInvalid">Entrar</button>

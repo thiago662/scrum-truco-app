@@ -30,6 +30,7 @@ export class NavComponent implements OnInit, OnDestroy {
   isLogged = false;
   mode: 'login' | 'create' = 'login';
   errorMessage = '';
+  resetMessage = '';
 
   private userSub?: Subscription;
   private modalRequestSub?: Subscription;
@@ -84,11 +85,13 @@ export class NavComponent implements OnInit, OnDestroy {
 
   open(content: TemplateRef<unknown>) {
     this.errorMessage = '';
+    this.resetMessage = '';
     this.modalService.open(content);
   }
 
   selectedMode(mode: 'login' | 'create') {
     this.errorMessage = '';
+    this.resetMessage = '';
     this.mode = mode;
   }
 
@@ -103,6 +106,7 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   async login() {
+    this.resetMessage = '';
     var userForm = this.userForm.value;
 
     try {
@@ -113,6 +117,7 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   async createUser() {
+    this.resetMessage = '';
     var userForm = this.userForm.value;
 
     try {
@@ -128,6 +133,7 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   async updateProfile() {
+    this.resetMessage = '';
     var userForm = this.userForm.value;
 
     try {
@@ -138,6 +144,28 @@ export class NavComponent implements OnInit, OnDestroy {
     } catch {
       this.errorMessage = 'Não foi possível salvar as alterações.';
     }
+  }
+
+  async sendPasswordReset() {
+    this.errorMessage = '';
+    this.resetMessage = '';
+
+    if (this.userForm.controls.email.invalid) {
+      return;
+    }
+
+    try {
+      await this.authService.resetPassword(this.userForm.value.email ?? '');
+    } catch (error: any) {
+      // nunca revela se o e-mail existe ou não (enumeração de conta) -- só erro de
+      // verdade (rede, limite de tentativas) vira mensagem de falha
+      if (error?.code !== 'auth/user-not-found') {
+        this.errorMessage = 'Não foi possível enviar o e-mail agora.';
+        return;
+      }
+    }
+
+    this.resetMessage = 'Enviamos um link pra redefinir sua senha nesse e-mail.';
   }
 
   async logout() {

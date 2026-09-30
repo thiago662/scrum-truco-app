@@ -28,9 +28,12 @@ export class FirstComponent implements OnInit, OnDestroy {
 
     const user = await this.authService.getCurrentUser();
 
-    // se o componente já foi destruído (usuário navegou pra outro lugar enquanto a
-    // promise resolvia), não força redirect por cima de onde a pessoa já está
-    if (user != null && !this.destroyed) {
+    // isGuest fica de fora: visitar uma sala sem sessão cria um convidado anônimo de
+    // verdade no Firebase Auth (room-view.component.ts, loginAsGuest), e isso não é
+    // "ter conta" — sem essa checagem, todo visitante virava "logado" e nunca mais via
+    // essa página. Guarda de destroyed: não força redirect por cima de onde a pessoa já está
+    // se ela navegou pra outro lugar enquanto a promise resolvia.
+    if (user != null && !user.isGuest && !this.destroyed) {
       this.router.navigate(['/rooms']);
     }
   }

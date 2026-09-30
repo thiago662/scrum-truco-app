@@ -31,9 +31,11 @@
                 <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss('Cross click')"></button>
             </li>
         }
-        <li class="nav-item active">
-            <a class="nav-link px-3" [routerLink]="'rooms'" (click)="offcanvas.dismiss('Cross click')">Minhas salas</a>
-        </li>
+        @if (isLogged) {
+            <li class="nav-item active">
+                <a class="nav-link px-3" [routerLink]="'rooms'" (click)="offcanvas.dismiss('Cross click')">Minhas salas</a>
+            </li>
+        }
     </ul>
 </ng-template>
 

@@ -19,6 +19,10 @@
     <a class="btn btn-outline-primary text-nowrap" routerLink="/rooms/search">Entrar com link/código</a>
 </div>
 
+@if (loadError) {
+    <div class="alert alert-danger" role="alert">Não foi possível carregar suas salas agora.</div>
+}
+
 @if (loaded && cards.length === 0) {
     <div class="empty-state">
         <app-logo-mark class="empty-state__mark text-primary"></app-logo-mark>

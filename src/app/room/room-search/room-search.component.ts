@@ -45,14 +45,19 @@ export class RoomSearchComponent {
     }
 
     this.searching = true;
-    const room = await this.roomService.getRoom(id);
-    this.searching = false;
+    try {
+      const room = await this.roomService.getRoom(id);
 
-    if (room == null) {
-      this.errorMessage = 'Sala não encontrada. Confira o link ou código.';
-      return;
+      if (room == null) {
+        this.errorMessage = 'Sala não encontrada. Confira o link ou código.';
+        return;
+      }
+
+      this.router.navigate(['/rooms', id]);
+    } catch {
+      this.errorMessage = 'Não foi possível buscar a sala agora.';
+    } finally {
+      this.searching = false;
     }
-
-    this.router.navigate(['/rooms', id]);
   }
 }

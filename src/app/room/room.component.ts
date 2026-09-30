@@ -74,6 +74,7 @@ function toCard(room: Room, myUid: string): RoomCard {
 export class RoomComponent implements OnInit, OnDestroy {
   cards: RoomCard[] = [];
   loaded = false;
+  loadError = false;
   filterText = '';
 
   private roomsSub?: Subscription;
@@ -97,7 +98,12 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     const user = await this.authService.getCurrentUser();
 
-    if (user?.id == null) {
+    // convidado anônimo (loginAsGuest, criado ao visitar uma sala sem sessão) não tem
+    // "minhas salas" -- só entra em sala por link, nunca aparece nesse índice. loaded=true
+    // aqui pra cair no estado vazio em vez de grade em branco pra sempre -- a rota /rooms
+    // ainda não tem guard nenhum (chega isGuest daqui), só bloqueia visualmente, por enquanto
+    if (user?.id == null || user.isGuest) {
+      this.loaded = true;
       return;
     }
 
@@ -106,18 +112,39 @@ export class RoomComponent implements OnInit, OnDestroy {
     // ponytail: refaz o getRoom de toda sala a cada emissão do índice, mesmo que só uma tenha
     // mudado — poucas dezenas de leitura por usuário, bem dentro do Spark. Cachear por
     // roomId só se a lista de salas por usuário crescer de verdade.
-    this.roomsSub = this.roomService.getUserRooms(myUid).subscribe(async (entries) => {
-      const token = ++this.requestToken;
-      const rooms = await Promise.all(entries.map((entry) => this.roomService.getRoom(entry.roomId)));
+    this.roomsSub = this.roomService.getUserRooms(myUid).subscribe({
+      next: async (entries) => {
+        const token = ++this.requestToken;
 
-      if (token !== this.requestToken) {
-        return;
-      }
+        try {
+          const rooms = await Promise.all(entries.map((entry) => this.roomService.getRoom(entry.roomId)));
 
-      this.cards = rooms
-        .filter((room): room is Room => room != null)
-        .map((room) => toCard(room, myUid));
-      this.loaded = true;
+          if (token !== this.requestToken) {
+            return;
+          }
+
+          this.cards = rooms
+            .filter((room): room is Room => room != null)
+            .map((room) => toCard(room, myUid));
+          this.loadError = false;
+        } catch {
+          if (token !== this.requestToken) {
+            return;
+          }
+
+          this.loadError = true;
+        } finally {
+          if (token === this.requestToken) {
+            this.loaded = true;
+          }
+        }
+      },
+      // erro do próprio listener (users/{uid}/rooms) -- sem isso, RxJS relança sem
+      // handler e loaded/loadError nunca atualizam, grade fica em branco pra sempre
+      error: () => {
+        this.loadError = true;
+        this.loaded = true;
+      },
     });
   }
 

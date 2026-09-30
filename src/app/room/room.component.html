@@ -1,8 +1,60 @@
-@for (room of rooms; track $index) {
-    <div class="card mb-3" [routerLink]="['/rooms/' + room?.id]">
-        <div class="card-body">
-            <h5 class="card-title">{{ room?.title }}</h5>
-            <h6 class="card-subtitle mb-2 text-body-secondary">{{ room?.id }}</h6>
-        </div>
+<div class="dash-header">
+    <div>
+        <h1 class="h3 mb-0">Suas salas</h1>
+        @if (cards.length > 0) {
+            <p class="text-body-secondary mb-0">{{ cards.length }} sala{{ cards.length === 1 ? '' : 's' }}</p>
+        }
+    </div>
+    <a class="btn btn-primary" routerLink="/rooms/add">+ Nova sala</a>
+</div>
+
+<div class="toolbar">
+    <input
+        type="text"
+        class="form-control"
+        placeholder="Filtrar pelas suas salas..."
+        [(ngModel)]="filterText"
+        [disabled]="cards.length === 0"
+    >
+    <a class="btn btn-outline-primary text-nowrap" routerLink="/rooms/search">Entrar com link/código</a>
+</div>
+
+@if (loaded && cards.length === 0) {
+    <div class="empty-state">
+        <app-logo-mark class="empty-state__mark text-primary"></app-logo-mark>
+        <h3 class="h5">Nenhuma sala ainda</h3>
+        <p class="text-body-secondary">Crie a primeira ou entre com o link que alguém te mandou.</p>
+        <a class="btn btn-primary" routerLink="/rooms/add">+ Criar minha primeira sala</a>
+    </div>
+} @else {
+    <div class="grid">
+        @for (card of filteredCards; track card.id) {
+            <a class="room-card" [routerLink]="['/rooms', card.id]">
+                <span class="pill" [class.pill--open]="card.status === 'open'" [class.pill--closed]="card.status === 'closed'">
+                    {{ card.status === 'open' ? 'Aberta' : 'Encerrada' }}
+                </span>
+                <div>
+                    <p class="room-card__title">{{ card.title }}</p>
+                    @if (card.roleLabel) {
+                        <p class="room-card__meta">{{ card.roleLabel }}</p>
+                    }
+                </div>
+                <div class="room-card__footer">
+                    @if (card.activityLabel) {
+                        <span class="room-card__meta">Ativa {{ card.activityLabel }}</span>
+                    }
+                    @if (card.avatarInitials.length > 0) {
+                        <span class="avatars">
+                            @for (initial of card.avatarInitials; track $index) {
+                                <span class="avatar">{{ initial }}</span>
+                            }
+                            @if (card.extraMemberCount > 0) {
+                                <span class="avatar">+{{ card.extraMemberCount }}</span>
+                            }
+                        </span>
+                    }
+                </div>
+            </a>
+        }
     </div>
 }

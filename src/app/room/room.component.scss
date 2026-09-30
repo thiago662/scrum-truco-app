@@ -1,0 +1,126 @@
+.dash-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.toolbar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.toolbar .form-control {
+    flex: 1;
+    min-width: 200px;
+}
+
+.empty-state {
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 1.25rem;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    background: var(--bs-tertiary-bg);
+}
+
+.empty-state__mark {
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1rem;
+    opacity: 0.85;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.room-card {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    padding: 1.1rem;
+    aspect-ratio: 1 / 0.95;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 120ms ease, transform 120ms ease;
+
+    &:hover, &:focus-visible {
+        border-color: var(--bs-primary);
+        transform: translateY(-2px);
+    }
+}
+
+.pill {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &--open {
+        background: var(--bs-primary-bg-subtle);
+        color: var(--bs-primary);
+    }
+
+    &--closed {
+        background: var(--bs-tertiary-bg);
+        color: var(--bs-secondary-color);
+    }
+}
+
+.room-card__title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0 1.8rem 0.2rem 0;
+    line-height: 1.25;
+}
+
+.room-card__meta {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    margin: 0.15rem 0;
+}
+
+.room-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.avatars {
+    display: flex;
+}
+
+.avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--bs-tertiary-bg);
+    border: 2px solid var(--bs-body-bg);
+    margin-left: -0.4rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--bs-secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:first-child {
+        margin-left: 0;
+    }
+}

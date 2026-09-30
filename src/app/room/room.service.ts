@@ -12,7 +12,7 @@ export const DELETE_AFTER_CLOSE_MS = 24 * 60 * 60_000;
 // mais curto que as tolerâncias acima só pra reagir num tempo razoável, sem sobrecarregar
 export const STALE_CHECK_INTERVAL_MS = 30_000;
 
-function toMillis(value: any): number | null {
+export function toMillis(value: any): number | null {
   return typeof value?.toMillis === 'function' ? value.toMillis() : null;
 }
 

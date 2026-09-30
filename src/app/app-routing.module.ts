@@ -9,11 +9,6 @@ import { RoomAddComponent } from './room/room-add/room-add.component';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'first',
-    pathMatch: 'full',
-  },
-  {
-    path: 'first',
     component: FirstComponent,
   },
   {
@@ -49,7 +44,7 @@ const routes: Routes = [
   // },
   {
     path: '**',
-    redirectTo: 'first',
+    redirectTo: '',
   },
 ];
 

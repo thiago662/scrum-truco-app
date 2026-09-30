@@ -38,16 +38,30 @@
 </ng-template>
 
 <ng-template #contentmodal let-c="close" let-d="dismiss">
-    <form [formGroup]="userForm">
-        <div class="modal-header">
-            <h4 class="modal-title" id="modal-basic-title">Usuario</h4>
-            <button type="button" class="btn-close" aria-label="Close" (click)="d('Cross click')"></button>
+    <div class="modal-header">
+        <h4 class="modal-title" id="modal-basic-title">
+            {{ isLogged ? 'Meu perfil' : (mode === 'create' ? 'Criar conta' : 'Entrar') }}
+        </h4>
+        <button type="button" class="btn-close" aria-label="Close" (click)="d('Cross click')"></button>
+    </div>
+
+    @if (!isLogged) {
+        <div class="modal-tabs">
+            <button type="button" class="modal-tab" [class.modal-tab--active]="mode === 'login'" (click)="selectedMode('login')">Entrar</button>
+            <button type="button" class="modal-tab" [class.modal-tab--active]="mode === 'create'" (click)="selectedMode('create')">Criar conta</button>
         </div>
+    }
+
+    <form [formGroup]="userForm" (ngSubmit)="submit()">
         @if (isLogged) {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
                 }
+                <div class="profile-avatar">{{ profileInitial }}</div>
+                <p class="profile-name">{{ userForm.value.name }}</p>
+                <p class="profile-email text-body-secondary">{{ userForm.value.email }}</p>
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome</label>
                     <input type="text" class="form-control" id="name" formControlName="name">
@@ -60,13 +74,18 @@
                     <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" formControlName="email" readonly>
                 </div>
+
+                <button type="submit" class="btn btn-primary w-100 mb-3">Salvar alterações</button>
+
+                <div class="danger-zone">
+                    <p class="danger-zone__label">Conta</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" (click)="logout()">Sair</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm flex-fill" (click)="deleteUser()">Excluir conta</button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="updateProfile()">Salvar</button>
-                <button type="submit" class="btn btn-primary" (click)="logout()">Logout</button>
-                <button type="submit" class="btn btn-primary" (click)="deleteUser()">Excluir</button>
-            </div>
-        } @else if (!isLogged && mode == 'create') {
+        } @else if (mode === 'create') {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
@@ -89,9 +108,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="createUser()">Salvar</button>
+                <button type="submit" class="btn btn-primary w-100">Criar conta</button>
             </div>
-        } @else if (!isLogged && mode == 'login') {
+        } @else {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
@@ -106,14 +125,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="login()">Logar</button>
+                <button type="submit" class="btn btn-primary w-100">Entrar</button>
             </div>
-        } @else if (!isLogged) {
-            <div class="modal-body">
-                <button type="button" class="btn btn-primary" (click)="selectedMode('login')">Login</button>
-                <button type="button" class="btn btn-primary" (click)="selectedMode('create')">Criar</button>
-            </div>
-            <div class="modal-footer"></div>
         }
     </form>
 </ng-template>

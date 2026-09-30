@@ -26,7 +26,7 @@ export class NavComponent implements OnInit, OnDestroy {
     password: new FormControl(''),
   });
   isLogged = false;
-  mode: 'login' | 'create' | '' = '';
+  mode: 'login' | 'create' = 'login';
   errorMessage = '';
 
   private userSub?: Subscription;
@@ -90,6 +90,16 @@ export class NavComponent implements OnInit, OnDestroy {
     this.mode = mode;
   }
 
+  submit() {
+    if (this.isLogged) {
+      this.updateProfile();
+    } else if (this.mode === 'create') {
+      this.createUser();
+    } else {
+      this.login();
+    }
+  }
+
   async login() {
     var userForm = this.userForm.value;
 
@@ -118,16 +128,25 @@ export class NavComponent implements OnInit, OnDestroy {
   async updateProfile() {
     var userForm = this.userForm.value;
 
-    await this.authService.updateProfile(userForm?.id ?? '', {
-      name: userForm?.name ?? '',
-      companyName: userForm?.companyName ?? '',
-    });
+    try {
+      await this.authService.updateProfile(userForm?.id ?? '', {
+        name: userForm?.name ?? '',
+        companyName: userForm?.companyName ?? '',
+      });
+    } catch {
+      this.errorMessage = 'Não foi possível salvar as alterações.';
+    }
   }
 
   async logout() {
     await this.authService.logout();
 
-    this.mode = '';
+    this.mode = 'login';
+  }
+
+  get profileInitial(): string {
+    const name = this.userForm.value.name || this.userForm.value.email || '';
+    return name.charAt(0).toUpperCase() || '?';
   }
 
   async deleteUser() {

@@ -6,3 +6,22 @@ $body-bg-dark: #171717;
 $body-color-dark: #f2f2f2;
 
 @import "bootstrap/scss/bootstrap";
+
+// color-contrast() do Bootstrap escolhe preto pro texto do btn-primary: branco só dá ~3.7:1
+// nesse tom (abaixo do 4.5:1 exigido pra texto normal — e 16px/negrito não chega nos ~18.66px
+// que a isenção de "texto grande" do WCAG exigiria pra valer 3:1). Decisão consciente: prioriza
+// consistência com o resto do app, que já usa branco sobre a cor de destaque (badges, verso da
+// carta), em vez da leitura mais estrita do AA. Seletores de :active copiados de
+// node_modules/bootstrap/scss/_buttons.scss (são os que realmente trocam o fundo pra $primary).
+.btn-primary,
+.btn-outline-primary:hover,
+.btn-outline-primary:focus-visible,
+:not(.btn-check) + .btn-outline-primary:active,
+.btn-outline-primary:first-child:active,
+.btn-outline-primary.show {
+    --bs-btn-color: #fff;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-active-color: #fff;
+    --bs-btn-disabled-color: #fff;
+    font-weight: 600;
+}

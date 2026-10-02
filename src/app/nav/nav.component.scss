@@ -66,6 +66,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    cursor: pointer;
+}
+
+// a linha toda já é o controle acessível (role="switch" nela mesma) -- o input só existe
+// pelo visual padrão do Bootstrap; pointer-events:none pra clique nele cair na linha
+.theme-row__switch {
+    pointer-events: none;
 }
 
 .modal-tabs {

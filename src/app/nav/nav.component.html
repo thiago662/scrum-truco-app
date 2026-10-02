@@ -22,10 +22,19 @@
                 </span>
             </button>
             <ng-template #themeRowTpl>
-                <div class="dropdown-item theme-row">
+                <div
+                    class="dropdown-item theme-row"
+                    role="switch"
+                    tabindex="0"
+                    [attr.aria-checked]="isDarkTheme"
+                    aria-label="Tema escuro"
+                    (click)="toggleTheme()"
+                    (keydown.enter)="toggleTheme()"
+                    (keydown.space)="$event.preventDefault(); toggleTheme()"
+                >
                     <span>Tema escuro</span>
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" [checked]="isDarkTheme" (change)="toggleTheme()" aria-label="Alternar tema escuro">
+                        <input class="form-check-input theme-row__switch" type="checkbox" tabindex="-1" aria-hidden="true" [checked]="isDarkTheme">
                     </div>
                 </div>
             </ng-template>

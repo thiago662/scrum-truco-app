@@ -7,6 +7,8 @@ import { AuthModalService } from '../auth/auth-modal.service';
   styleUrl: './first.component.scss'
 })
 export class FirstComponent {
+  currentYear = new Date().getFullYear();
+
   constructor(private authModalService: AuthModalService) { }
 
   openLogin() {

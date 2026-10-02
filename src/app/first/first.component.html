@@ -1,6 +1,109 @@
-<div class="text-center">
-    <h1 class="h1">Scrum Truco</h1>
-    <h3 class="h3">Estime tarefas com seu time em tempo real, no clima do truco.</h3>
-    <button type="button" class="btn btn-primary me-2" (click)="openLogin()">Login</button>
-    <button type="button" class="btn btn-outline-primary" (click)="openRegister()">Cadastrar</button>
-</div>
+<section class="hero text-center">
+    <h1 class="display-5 fw-bold">Scrum Truco</h1>
+    <p class="hero__tagline">Estime tarefas com seu time em tempo real, no clima do truco.</p>
+
+    <div class="hero__ctas mb-4">
+        <button type="button" class="btn btn-primary btn-lg" (click)="openRegister()">+ Criar conta grátis</button>
+        <button type="button" class="btn btn-link" (click)="openLogin()">Já tem conta? Entrar</button>
+    </div>
+
+    <div class="hero__mesa mx-auto">
+        <div class="hero__mesa-panel">
+            <span class="hero__mesa-status">Em votação</span>
+            <p class="hero__mesa-pauta">Refinar história do carrinho</p>
+        </div>
+        <div class="hero__mesa-seats">
+            <div class="hero__seat">
+                <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
+                <span>Mariana</span>
+            </div>
+            <div class="hero__seat">
+                <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
+                <span>Você</span>
+            </div>
+            <div class="hero__seat">
+                <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
+                <span>João</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section--card">
+    <h2 class="section__title">Como funciona</h2>
+    <div class="steps">
+        <div class="step">
+            <span class="step__num">1</span>
+            <p>Crie uma sala e escolha a escala (Fibonacci, camisa...)</p>
+        </div>
+        <div class="step">
+            <span class="step__num">2</span>
+            <p>Compartilhe o link com o time</p>
+        </div>
+        <div class="step">
+            <span class="step__num">3</span>
+            <p>Todo mundo vota em sigilo</p>
+        </div>
+        <div class="step">
+            <span class="step__num">4</span>
+            <p>Revele e veja a média na hora</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section__title">Por que usar</h2>
+    <div class="features">
+        <div class="feature">
+            <i class="fas fa-lock feature__icon"></i>
+            <h3>Sigilo garantido de verdade</h3>
+            <p>O voto fica escondido até a revelação -- garantido no servidor, não só escondido na tela.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-link feature__icon"></i>
+            <h3>Sem barreira pra entrar</h3>
+            <p>Convidado entra só com o link, sem precisar criar conta.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-palette feature__icon"></i>
+            <h3>Tema claro e escuro</h3>
+            <p>Troca na hora, direto no menu.</p>
+        </div>
+        <div class="feature">
+            <app-logo-mark class="feature__icon feature__icon--mark"></app-logo-mark>
+            <h3>Mesa de verdade</h3>
+            <p>Participantes ao redor da mesa, não uma lista chata.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section section--card">
+    <h2 class="section__title">Sobre quem fez</h2>
+    <div class="about">
+        <div class="about__avatar">T</div>
+        <div class="about__text">
+            <h3>Thiago Gonçalves Santos</h3>
+            <p class="about__role">Desenvolvedor Full Stack</p>
+            <p class="about__bio">
+                Mais de 6 anos construindo sistemas back-end e integrações. Scrum Truco é um
+                projeto de estudo, feito com Angular, Firebase e bastante ajuda de IA no processo.
+            </p>
+            <div class="about__links">
+                <a href="https://github.com/thiago662" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://www.linkedin.com/in/thiago-gonçalves-santos-730a74199/" target="_blank" rel="noopener">LinkedIn</a>
+                <a href="https://thiago662.github.io/" target="_blank" rel="noopener">Portfólio</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section text-center">
+    <h2 class="section__title">Pronto pra estimar com o time?</h2>
+    <button type="button" class="btn btn-primary btn-lg" (click)="openRegister()">+ Criar conta grátis</button>
+</section>
+
+<footer class="footer text-center">
+    Scrum Truco ·
+    <a href="https://github.com/thiago662/scrum-truco-app" target="_blank" rel="noopener">Código aberto no GitHub</a>
+    · {{ currentYear }}
+</footer>

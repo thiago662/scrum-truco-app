@@ -45,19 +45,35 @@ export class NavComponent implements OnInit, OnDestroy {
     private themeService: ThemeService,
   ) { }
 
-  get accountLabel(): string {
+  // nome na linha de cima, empresa (só se tiver as duas) na linha de baixo -- cada uma
+  // com seu próprio max-width/ellipsis no template, em vez de uma string "Nome · Empresa"
+  // só (truncava no meio sem critério, cortava letra da empresa quase sempre)
+  get accountName(): string {
     if (!this.isLogged || this.currentUser == null) {
       return 'Entrar ou Cadastrar';
+    }
+
+    return this.currentUser.name?.trim() || this.currentUser.companyName?.trim() || 'Minha conta';
+  }
+
+  get accountCompany(): string {
+    if (!this.isLogged || this.currentUser == null) {
+      return '';
     }
 
     const name = this.currentUser.name?.trim();
     const companyName = this.currentUser.companyName?.trim();
 
-    if (name && companyName) {
-      return `${name} · ${companyName}`;
-    }
+    return name && companyName ? companyName : '';
+  }
 
-    return name || companyName || 'Minha conta';
+  // separado de profileInitial (abaixo): esse não pode ler o userForm -- mesmo problema
+  // do accountName, um rascunho de nome não salvo não pode aparecer na letra do avatar
+  get accountInitial(): string {
+    const name = this.currentUser?.name?.trim() || this.currentUser?.companyName?.trim() || '';
+    // [...name][0] (não charAt(0)): nome começando com emoji/caractere fora do BMP usa par
+    // substituto de 2 code units -- charAt(0) pegaria só a metade e quebraria o glifo
+    return [...name][0]?.toUpperCase() || '?';
   }
 
   get isDarkTheme(): boolean {
@@ -152,8 +168,8 @@ export class NavComponent implements OnInit, OnDestroy {
       await this.authService.updateProfile(userForm?.id ?? '', { name, companyName });
 
       // updateProfile grava direto no Firestore sem passar pelo Firebase Auth -- authState()
-      // não reemite, currentUser$ não sabe que o perfil mudou. Sem isso, accountLabel ficava
-      // preso no valor antigo até o próximo login/logout.
+      // não reemite, currentUser$ não sabe que o perfil mudou. Sem isso, accountName/
+      // accountCompany ficavam presos no valor antigo até o próximo login/logout.
       if (this.currentUser) {
         this.currentUser = new User(this.currentUser.id, name, this.currentUser.email, companyName, this.currentUser.isGuest);
       }
@@ -206,7 +222,7 @@ export class NavComponent implements OnInit, OnDestroy {
 
   get profileInitial(): string {
     const name = this.userForm.value.name?.trim() || this.userForm.value.email?.trim() || '';
-    return name.charAt(0).toUpperCase() || '?';
+    return [...name][0]?.toUpperCase() || '?';
   }
 
   async deleteUser() {

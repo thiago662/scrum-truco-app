@@ -7,8 +7,19 @@
 
         <div ngbDropdown #accountDropdown="ngbDropdown" autoClose="outside" placement="bottom-end" class="d-inline-block">
             <button class="btn btn-primary account-btn" type="button" ngbDropdownToggle>
-                <i class="fas fa-user"></i>
-                <span class="account-btn__label">{{ accountLabel }}</span>
+                <span class="account-btn__avatar">
+                    @if (isLogged) {
+                        {{ accountInitial }}
+                    } @else {
+                        <i class="fas fa-user"></i>
+                    }
+                </span>
+                <span class="account-btn__text">
+                    <span class="account-btn__name text-truncate">{{ accountName }}</span>
+                    @if (accountCompany) {
+                        <span class="account-btn__company text-truncate">{{ accountCompany }}</span>
+                    }
+                </span>
             </button>
             <ng-template #themeRowTpl>
                 <div class="dropdown-item theme-row">

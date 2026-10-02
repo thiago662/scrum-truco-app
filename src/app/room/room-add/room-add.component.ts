@@ -31,7 +31,7 @@ export class RoomAddComponent {
     }
 
     var roomForm = this.roomForm.value;
-    var title = roomForm?.title ?? '';
+    var title = (roomForm?.title ?? '').trim();
 
     var room: Room = {
       title,

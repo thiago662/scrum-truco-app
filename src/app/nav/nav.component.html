@@ -1,59 +1,90 @@
-<nav class="navbar navbar-expand-md navbar-light sticky-top bg-body-tertiary mb-3">
-	<div class="container">
-        <button class="navbar-toggler" type="button" (click)="openCanvasEnd(contentnavbar)"><i class="fas fa-bars"></i></button>
-        <div class="col-md-3">
-            <a class="navbar-brand text-primary d-flex align-items-center gap-2" [routerLink]="'.'">
-                <app-logo-mark class="brand__mark"></app-logo-mark>
-                <span class="brand__text fw-bold">Scrum Truco</span>
-            </a>
-        </div>
-		<div class="collapse navbar-collapse justify-content-center" [ngbCollapse]="isMenuCollapsed">
-            <ng-container *ngTemplateOutlet="contentnavbar"></ng-container>
-		</div>
-        <div class="col-md-3 text-end d-flex justify-content-end align-items-center gap-2">
-            <button
-                class="btn btn-outline-primary rounded-circle"
-                type="button"
-                (click)="toggleTheme()"
-                [attr.aria-label]="isDarkTheme ? 'Mudar pro tema claro' : 'Mudar pro tema escuro'"
-            >
-                <i class="fas" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
+<nav class="navbar navbar-light sticky-top bg-body-tertiary mb-3">
+	<div class="container d-flex align-items-center justify-content-between">
+        <a class="navbar-brand text-primary d-flex align-items-center gap-2 mb-0" [routerLink]="'.'">
+            <app-logo-mark class="brand__mark"></app-logo-mark>
+            <span class="brand__text fw-bold">Scrum Truco</span>
+        </a>
+
+        <!-- placement="bottom-end" (input do ngbDropdown) não estava alinhando à direita nessa
+        versão -- quem garante isso de verdade é a classe dropdown-menu-end abaixo, CSS puro -->
+        <div ngbDropdown #accountDropdown="ngbDropdown" autoClose="outside" placement="bottom-end" class="d-inline-block">
+            <button class="btn btn-primary account-btn" type="button" ngbDropdownToggle>
+                <span class="account-btn__avatar">
+                    @if (isLogged) {
+                        {{ accountInitial }}
+                    } @else {
+                        <i class="fas fa-user"></i>
+                    }
+                </span>
+                <span class="account-btn__text">
+                    <span class="account-btn__name text-truncate">{{ accountName }}</span>
+                    @if (accountCompany) {
+                        <span class="account-btn__company text-truncate">{{ accountCompany }}</span>
+                    }
+                </span>
             </button>
-            <button class="btn btn-primary rounded-circle" type="button" (click)="open(contentmodal)"><i class="fas fa-user"></i></button>
+            <ng-template #themeRowTpl>
+                <div
+                    class="dropdown-item theme-row"
+                    role="switch"
+                    tabindex="0"
+                    [attr.aria-checked]="isDarkTheme"
+                    aria-label="Tema escuro"
+                    (click)="toggleTheme()"
+                    (keydown.enter)="toggleTheme()"
+                    (keydown.space)="$event.preventDefault(); toggleTheme()"
+                >
+                    <span>Tema escuro</span>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input theme-row__switch" type="checkbox" tabindex="-1" aria-hidden="true" [checked]="isDarkTheme">
+                    </div>
+                </div>
+            </ng-template>
+
+            <div ngbDropdownMenu class="account-menu dropdown-menu-end">
+                @if (isLogged) {
+                    <a ngbDropdownItem routerLink="/rooms" (click)="accountDropdown.close()">Minhas salas</a>
+                    <button ngbDropdownItem type="button" (click)="open(contentmodal); accountDropdown.close()">Editar perfil</button>
+                    <div class="dropdown-divider"></div>
+                    <ng-container *ngTemplateOutlet="themeRowTpl"></ng-container>
+                    <div class="dropdown-divider"></div>
+                    <button ngbDropdownItem type="button" (click)="logout(); accountDropdown.close()">Sair</button>
+                } @else {
+                    <button ngbDropdownItem type="button" (click)="selectedMode('login'); open(contentmodal); accountDropdown.close()">Entrar</button>
+                    <button ngbDropdownItem type="button" (click)="selectedMode('create'); open(contentmodal); accountDropdown.close()">Criar conta</button>
+                    <div class="dropdown-divider"></div>
+                    <ng-container *ngTemplateOutlet="themeRowTpl"></ng-container>
+                }
+            </div>
         </div>
 	</div>
 </nav>
 
-<ng-template #contentnavbar let-offcanvas>
-    <ul class="nav navbar-nav col-md-auto">
-        @if (checkCanvas()) {
-            <li class="nav-item">
-                <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss('Cross click')"></button>
-            </li>
-        }
-        <li class="nav-item active">
-            <a class="nav-link px-3" [routerLink]="'rooms'" (click)="offcanvas.dismiss('Cross click')">Salas salvas</a>
-        </li>
-        <li class="nav-item active">
-            <a class="nav-link px-3" [routerLink]="'rooms/search'" (click)="offcanvas.dismiss('Cross click')">Pesquisar sala</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link px-3" [routerLink]="'rooms/add'" (click)="offcanvas.dismiss('Cross click')">Criar sala</a>
-        </li>
-    </ul>
-</ng-template>
-
 <ng-template #contentmodal let-c="close" let-d="dismiss">
-    <form [formGroup]="userForm">
-        <div class="modal-header">
-            <h4 class="modal-title" id="modal-basic-title">Usuario</h4>
-            <button type="button" class="btn-close" aria-label="Close" (click)="d('Cross click')"></button>
+    <div class="modal-header">
+        <h4 class="modal-title" id="modal-basic-title">
+            {{ isLogged ? 'Meu perfil' : (mode === 'create' ? 'Criar conta' : 'Entrar') }}
+        </h4>
+        <button type="button" class="btn-close" aria-label="Close" (click)="d('Cross click')"></button>
+    </div>
+
+    @if (!isLogged) {
+        <div class="modal-tabs">
+            <button type="button" class="modal-tab" [class.modal-tab--active]="mode === 'login'" (click)="selectedMode('login')">Entrar</button>
+            <button type="button" class="modal-tab" [class.modal-tab--active]="mode === 'create'" (click)="selectedMode('create')">Criar conta</button>
         </div>
+    }
+
+    <form [formGroup]="userForm" (ngSubmit)="submit()">
         @if (isLogged) {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
                 }
+                <div class="profile-avatar">{{ profileInitial }}</div>
+                <p class="profile-name">{{ userForm.value.name }}</p>
+                <p class="profile-email text-body-secondary">{{ userForm.value.email }}</p>
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome</label>
                     <input type="text" class="form-control" id="name" formControlName="name">
@@ -66,13 +97,18 @@
                     <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" formControlName="email" readonly>
                 </div>
+
+                <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="profileInvalid">Salvar alterações</button>
+
+                <div class="danger-zone">
+                    <p class="danger-zone__label">Conta</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" (click)="logout()">Sair</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm flex-fill" (click)="deleteUser()">Excluir conta</button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="updateProfile()">Salvar</button>
-                <button type="submit" class="btn btn-primary" (click)="logout()">Logout</button>
-                <button type="submit" class="btn btn-primary" (click)="deleteUser()">Excluir</button>
-            </div>
-        } @else if (!isLogged && mode == 'create') {
+        } @else if (mode === 'create') {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
@@ -95,12 +131,15 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="createUser()">Salvar</button>
+                <button type="submit" class="btn btn-primary w-100" [disabled]="createInvalid">Criar conta</button>
             </div>
-        } @else if (!isLogged && mode == 'login') {
+        } @else {
             <div class="modal-body">
                 @if (errorMessage) {
                     <div class="alert alert-danger">{{ errorMessage }}</div>
+                }
+                @if (resetMessage) {
+                    <div class="alert alert-success">{{ resetMessage }}</div>
                 }
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
@@ -110,16 +149,13 @@
                     <label for="password" class="form-label">Senha</label>
                     <input type="password" class="form-control" id="password" formControlName="password">
                 </div>
+                <button type="button" class="btn btn-link btn-sm p-0" [disabled]="userForm.controls.email.invalid" (click)="sendPasswordReset()">
+                    Esqueci minha senha
+                </button>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" (click)="login()">Logar</button>
+                <button type="submit" class="btn btn-primary w-100" [disabled]="loginInvalid">Entrar</button>
             </div>
-        } @else if (!isLogged) {
-            <div class="modal-body">
-                <button type="button" class="btn btn-primary" (click)="selectedMode('login')">Login</button>
-                <button type="button" class="btn btn-primary" (click)="selectedMode('create')">Criar</button>
-            </div>
-            <div class="modal-footer"></div>
         }
     </form>
 </ng-template>

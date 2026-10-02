@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, User as FirebaseUser, authState, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut } from '@angular/fire/auth';
+import { Auth, User as FirebaseUser, authState, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut, sendPasswordResetEmail } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp } from '@angular/fire/firestore';
 import { Observable, switchMap, firstValueFrom } from 'rxjs';
 import { User } from '../model/user.model';
@@ -50,6 +50,10 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<void> {
     await signInWithEmailAndPassword(this.auth, email, password);
+  }
+
+  async resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(this.auth, email);
   }
 
   async loginAsGuest(): Promise<User> {

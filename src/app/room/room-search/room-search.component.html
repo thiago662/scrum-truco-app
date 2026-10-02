@@ -1,4 +1,26 @@
-<div class="input-group mb-3">
-    <input type="text" class="form-control" placeholder="id da sala" aria-label="id da sala" aria-describedby="basic-addon2" [(ngModel)]="id">
-    <button class="input-group-text" id="basic-addon2" (click)="findClass()">Pesquisar</button>
+<div class="form-page">
+    <h1 class="h3">Entrar numa sala</h1>
+    <p class="text-body-secondary">Cole o link que alguém te mandou, ou só o código da sala.</p>
+
+    <form class="form-page__card" (ngSubmit)="findClass()">
+        @if (errorMessage) {
+            <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+        }
+
+        <div class="mb-3">
+            <label for="roomLink" class="form-label">Link ou código da sala</label>
+            <input
+                type="text"
+                class="form-control"
+                id="roomLink"
+                placeholder="ex: https://.../rooms/abc123 ou abc123"
+                [(ngModel)]="id"
+                name="roomLink"
+            >
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="searching || !id.trim()">
+            {{ searching ? 'Procurando...' : 'Entrar na sala' }}
+        </button>
+    </form>
 </div>

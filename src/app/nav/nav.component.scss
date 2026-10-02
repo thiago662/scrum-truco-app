@@ -1,3 +1,8 @@
+// breakpoint único reaproveitado nos 3 lugares abaixo que distinguem mobile/desktop --
+// bate com o "sm" do Bootstrap, mas como variável local (esse arquivo não importa o
+// styles.scss global) pra não desalinhar se só um dos 3 for editado no futuro
+$account-widen-breakpoint: 576px;
+
 .navbar-brand.text-primary:hover,
 .navbar-brand.text-primary:focus {
     color: var(--bs-primary);
@@ -10,4 +15,152 @@
 
 .brand__text {
     letter-spacing: -0.01em;
+}
+
+.account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-radius: 2rem;
+    padding: 0.35rem 1rem 0.35rem 0.35rem;
+    // mesma altura logado (2 linhas, nome+empresa) ou não (1 linha) -- sem isso o menu
+    // "pulava" de tamanho ao entrar/sair da conta
+    min-height: 2.9rem;
+}
+
+.account-btn__avatar {
+    width: 2.2rem;
+    height: 2.2rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--bs-primary);
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.account-btn__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.25;
+    min-width: 0; // sem isso max-width/ellipsis não funciona dentro de um flex item
+}
+
+// truncamento em si (overflow/ellipsis/nowrap) é o .text-truncate do Bootstrap, no template.
+// max-width menor no mobile: marca + botão não cabem lado a lado numa tela estreita com
+// nome/empresa longos, e a mesa quebra pra 2 linhas (.navbar sem -expand-md, flex-wrap:wrap
+// de propósito pra nunca vazar) -- mas o salto visual incomoda, então aperta o texto pra evitar
+// a quebra na maioria dos casos. Desktop tem espaço de sobra, fica bem mais largo.
+.account-btn__name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    max-width: 6rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        max-width: 13rem;
+    }
+}
+
+.account-btn__company {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    max-width: 6rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        max-width: 13rem;
+    }
+}
+
+.account-menu {
+    // menu alinhado à direita do botão (dropdown-menu-end no template) -- no mobile o botão
+    // pode estar tanto no fim da 1ª linha (perto da borda direita) quanto no início da 2ª
+    // linha (perto da esquerda, se marca+botão não couberem e quebrar). 16rem alinhado à
+    // direita de um botão que começa perto da borda esquerda vaza pra fora da tela à
+    // esquerda -- precisa ser estreito o bastante pra caber nos dois casos. 11rem (não 12rem):
+    // medido na prática em 320-360px, 12rem ainda vazava ~0.7px (sub-pixel, mas sem margem
+    // nenhuma) -- 11rem sobra margem de verdade em vez de ficar bem na borda.
+    min-width: 11rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        min-width: 16rem;
+    }
+}
+
+.theme-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+// a linha toda já é o controle acessível (role="switch" nela mesma) -- o input só existe
+// pelo visual padrão do Bootstrap; pointer-events:none pra clique nele cair na linha
+.theme-row__switch {
+    pointer-events: none;
+}
+
+.modal-tabs {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.modal-tab {
+    background: none;
+    border: none;
+    padding: 0.6rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    border-bottom: 2.5px solid transparent;
+
+    &--active {
+        color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+}
+
+.profile-avatar {
+    width: 3.4rem;
+    height: 3.4rem;
+    border-radius: 50%;
+    background: var(--bs-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.6rem;
+}
+
+.profile-name {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 0.1rem;
+}
+
+.profile-email {
+    text-align: center;
+    font-size: 0.85rem;
+    margin-bottom: 1.1rem;
+}
+
+.danger-zone {
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.danger-zone__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bs-secondary-color);
+    margin-bottom: 0.4rem;
 }

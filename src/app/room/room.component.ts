@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import { Room } from '../model/room.model';
 
 const MAX_AVATARS = 3;
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
 
 type RoomCard = {
   id: string;
@@ -28,15 +29,14 @@ function relativeLabel(value: any): string {
   // relógio entre o servidor (serverTimestamp) e a máquina do cliente
   const diffSec = Math.min(0, Math.round((ms - Date.now()) / 1000));
   const abs = Math.abs(diffSec);
-  const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
 
   // trunc (não round) ao converter pra minuto/hora/dia: arredondar deixaria 59min59s virar
   // "60 minutos" em vez de rolar pra "1 hora" (mesmo problema em qualquer fronteira de unidade)
-  if (abs < 60) return rtf.format(diffSec, 'second');
-  if (abs < 3600) return rtf.format(Math.trunc(diffSec / 60), 'minute');
-  if (abs < 86400) return rtf.format(Math.trunc(diffSec / 3600), 'hour');
-  if (abs < 86400 * 30) return rtf.format(Math.trunc(diffSec / 86400), 'day');
-  return rtf.format(Math.trunc(diffSec / (86400 * 30)), 'month');
+  if (abs < 60) return RELATIVE_TIME.format(diffSec, 'second');
+  if (abs < 3600) return RELATIVE_TIME.format(Math.trunc(diffSec / 60), 'minute');
+  if (abs < 86400) return RELATIVE_TIME.format(Math.trunc(diffSec / 3600), 'hour');
+  if (abs < 86400 * 30) return RELATIVE_TIME.format(Math.trunc(diffSec / 86400), 'day');
+  return RELATIVE_TIME.format(Math.trunc(diffSec / (86400 * 30)), 'month');
 }
 
 function toCard(room: Room, myUid: string): RoomCard {

@@ -23,14 +23,16 @@
     <div class="alert alert-danger" role="alert">Não foi possível carregar suas salas agora.</div>
 }
 
-@if (loaded && cards.length === 0) {
+@if (loaded && !loadError && cards.length === 0) {
     <div class="empty-state">
         <app-logo-mark class="empty-state__mark text-primary"></app-logo-mark>
         <h3 class="h5">Nenhuma sala ainda</h3>
         <p class="text-body-secondary">Crie a primeira ou entre com o link que alguém te mandou.</p>
         <a class="btn btn-primary" routerLink="/rooms/add">+ Criar minha primeira sala</a>
     </div>
-} @else {
+} @else if (!loadError && cards.length > 0 && filteredCards.length === 0) {
+    <p class="text-body-secondary">Nenhuma sala encontrada com esse filtro.</p>
+} @else if (!loadError) {
     <div class="grid">
         @for (card of filteredCards; track card.id) {
             <a class="room-card" [routerLink]="['/rooms', card.id]">

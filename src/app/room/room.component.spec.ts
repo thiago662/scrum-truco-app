@@ -33,4 +33,33 @@ describe('RoomComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('não mostra o estado vazio quando a carga falhou (loadError)', () => {
+    component.loaded = true;
+    component.loadError = true;
+    component.cards = [];
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Não foi possível carregar suas salas agora.');
+    expect(text).not.toContain('Nenhuma sala ainda');
+  });
+
+  it('avisa quando o filtro não encontra nenhuma sala', () => {
+    component.loaded = true;
+    component.loadError = false;
+    component.cards = [{
+      id: 'abc',
+      title: 'Sprint 1',
+      status: 'open',
+      roleLabel: '',
+      activityLabel: '',
+      avatarInitials: [],
+      extraMemberCount: 0,
+    }];
+    component.filterText = 'não existe nenhuma sala com esse nome';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma sala encontrada com esse filtro.');
+  });
 });

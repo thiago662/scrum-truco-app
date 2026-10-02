@@ -12,6 +12,30 @@
     letter-spacing: -0.01em;
 }
 
+.account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 2rem;
+}
+
+.account-btn__label {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-menu {
+    min-width: 16rem;
+}
+
+.theme-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .modal-tabs {
     display: flex;
     gap: 1.5rem;

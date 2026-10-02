@@ -1,43 +1,42 @@
-<nav class="navbar navbar-expand-md navbar-light sticky-top bg-body-tertiary mb-3">
-	<div class="container">
-        <button class="navbar-toggler" type="button" (click)="openCanvasEnd(contentnavbar)"><i class="fas fa-bars"></i></button>
-        <div class="col-md-3">
-            <a class="navbar-brand text-primary d-flex align-items-center gap-2" [routerLink]="'.'">
-                <app-logo-mark class="brand__mark"></app-logo-mark>
-                <span class="brand__text fw-bold">Scrum Truco</span>
-            </a>
-        </div>
-		<div class="collapse navbar-collapse justify-content-center" [ngbCollapse]="isMenuCollapsed">
-            <ng-container *ngTemplateOutlet="contentnavbar"></ng-container>
-		</div>
-        <div class="col-md-3 text-end d-flex justify-content-end align-items-center gap-2">
-            <button
-                class="btn btn-outline-primary rounded-circle"
-                type="button"
-                (click)="toggleTheme()"
-                [attr.aria-label]="isDarkTheme ? 'Mudar pro tema claro' : 'Mudar pro tema escuro'"
-            >
-                <i class="fas" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
+<nav class="navbar navbar-light sticky-top bg-body-tertiary mb-3">
+	<div class="container d-flex align-items-center justify-content-between">
+        <a class="navbar-brand text-primary d-flex align-items-center gap-2 mb-0" [routerLink]="'.'">
+            <app-logo-mark class="brand__mark"></app-logo-mark>
+            <span class="brand__text fw-bold">Scrum Truco</span>
+        </a>
+
+        <div ngbDropdown #accountDropdown="ngbDropdown" autoClose="outside" placement="bottom-end" class="d-inline-block">
+            <button class="btn btn-primary account-btn" type="button" ngbDropdownToggle>
+                <i class="fas fa-user"></i>
+                <span class="account-btn__label">{{ accountLabel }}</span>
             </button>
-            <button class="btn btn-primary rounded-circle" type="button" (click)="open(contentmodal)"><i class="fas fa-user"></i></button>
+            <ng-template #themeRowTpl>
+                <div class="dropdown-item theme-row">
+                    <span>Tema escuro</span>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" [checked]="isDarkTheme" (change)="toggleTheme()" aria-label="Alternar tema escuro">
+                    </div>
+                </div>
+            </ng-template>
+
+            <div ngbDropdownMenu class="account-menu">
+                @if (isLogged) {
+                    <a ngbDropdownItem routerLink="/rooms" (click)="accountDropdown.close()">Minhas salas</a>
+                    <button ngbDropdownItem type="button" (click)="open(contentmodal); accountDropdown.close()">Editar perfil</button>
+                    <div class="dropdown-divider"></div>
+                    <ng-container *ngTemplateOutlet="themeRowTpl"></ng-container>
+                    <div class="dropdown-divider"></div>
+                    <button ngbDropdownItem type="button" (click)="logout(); accountDropdown.close()">Sair</button>
+                } @else {
+                    <button ngbDropdownItem type="button" (click)="selectedMode('login'); open(contentmodal); accountDropdown.close()">Entrar</button>
+                    <button ngbDropdownItem type="button" (click)="selectedMode('create'); open(contentmodal); accountDropdown.close()">Criar conta</button>
+                    <div class="dropdown-divider"></div>
+                    <ng-container *ngTemplateOutlet="themeRowTpl"></ng-container>
+                }
+            </div>
         </div>
 	</div>
 </nav>
-
-<ng-template #contentnavbar let-offcanvas>
-    <ul class="nav navbar-nav col-md-auto">
-        @if (checkCanvas()) {
-            <li class="nav-item">
-                <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss('Cross click')"></button>
-            </li>
-        }
-        @if (isLogged) {
-            <li class="nav-item active">
-                <a class="nav-link px-3" [routerLink]="'rooms'" (click)="offcanvas.dismiss('Cross click')">Minhas salas</a>
-            </li>
-        }
-    </ul>
-</ng-template>
 
 <ng-template #contentmodal let-c="close" let-d="dismiss">
     <div class="modal-header">

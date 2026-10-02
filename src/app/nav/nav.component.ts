@@ -1,10 +1,11 @@
-import { Component, inject, TemplateRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
-import { NgbOffcanvas, NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
+import { Component, TemplateRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
+import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { AuthModalService } from '../auth/auth-modal.service';
 import { ThemeService } from '../shared/theme.service';
+import { User } from '../model/user.model';
 
 @Component({
   selector: 'app-nav',
@@ -12,11 +13,7 @@ import { ThemeService } from '../shared/theme.service';
   styleUrl: './nav.component.scss'
 })
 export class NavComponent implements OnInit, OnDestroy {
-  private offcanvasService = inject(NgbOffcanvas);
-
   @ViewChild('contentmodal') contentModal!: TemplateRef<any>;
-
-  isMenuCollapsed = true;
 
   userForm = new FormGroup({
     id: new FormControl(''),
@@ -32,6 +29,11 @@ export class NavComponent implements OnInit, OnDestroy {
   errorMessage = '';
   resetMessage = '';
 
+  // fonte do rótulo do botão no menu -- não pode ser o userForm (buffer de edição): se a
+  // pessoa digitar um nome novo em "Editar perfil" e fechar sem salvar, o botão ficaria
+  // mostrando o rascunho não salvo pelo resto da sessão
+  private currentUser: User | null = null;
+
   private userSub?: Subscription;
   private modalRequestSub?: Subscription;
 
@@ -42,6 +44,21 @@ export class NavComponent implements OnInit, OnDestroy {
     private authModalService: AuthModalService,
     private themeService: ThemeService,
   ) { }
+
+  get accountLabel(): string {
+    if (!this.isLogged || this.currentUser == null) {
+      return 'Entrar ou Cadastrar';
+    }
+
+    const name = this.currentUser.name?.trim();
+    const companyName = this.currentUser.companyName?.trim();
+
+    if (name && companyName) {
+      return `${name} · ${companyName}`;
+    }
+
+    return name || companyName || 'Minha conta';
+  }
 
   get isDarkTheme(): boolean {
     return this.themeService.current === 'dark';
@@ -54,6 +71,7 @@ export class NavComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.userSub = this.authService.currentUser$.subscribe((user) => {
       this.isLogged = user != null && !user.isGuest;
+      this.currentUser = user;
 
       this.userForm.patchValue({
         id: user?.id ?? '',
@@ -73,14 +91,6 @@ export class NavComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.userSub?.unsubscribe();
     this.modalRequestSub?.unsubscribe();
-  }
-
-  openCanvasEnd(content: TemplateRef<any>) {
-    this.offcanvasService.open(content, { position: 'end' });
-  }
-
-  checkCanvas() {
-    return this.offcanvasService.hasOpenOffcanvas() ?? false;
   }
 
   open(content: TemplateRef<unknown>) {
@@ -137,10 +147,16 @@ export class NavComponent implements OnInit, OnDestroy {
     var userForm = this.userForm.value;
 
     try {
-      await this.authService.updateProfile(userForm?.id ?? '', {
-        name: userForm?.name ?? '',
-        companyName: userForm?.companyName ?? '',
-      });
+      const name = userForm?.name ?? '';
+      const companyName = userForm?.companyName ?? '';
+      await this.authService.updateProfile(userForm?.id ?? '', { name, companyName });
+
+      // updateProfile grava direto no Firestore sem passar pelo Firebase Auth -- authState()
+      // não reemite, currentUser$ não sabe que o perfil mudou. Sem isso, accountLabel ficava
+      // preso no valor antigo até o próximo login/logout.
+      if (this.currentUser) {
+        this.currentUser = new User(this.currentUser.id, name, this.currentUser.email, companyName, this.currentUser.isGuest);
+      }
     } catch {
       this.errorMessage = 'Não foi possível salvar as alterações.';
     }

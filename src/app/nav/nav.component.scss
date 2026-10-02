@@ -1,3 +1,8 @@
+// breakpoint único reaproveitado nos 3 lugares abaixo que distinguem mobile/desktop --
+// bate com o "sm" do Bootstrap, mas como variável local (esse arquivo não importa o
+// styles.scss global) pra não desalinhar se só um dos 3 for editado no futuro
+$account-widen-breakpoint: 576px;
+
 .navbar-brand.text-primary:hover,
 .navbar-brand.text-primary:focus {
     color: var(--bs-primary);
@@ -45,21 +50,44 @@
     min-width: 0; // sem isso max-width/ellipsis não funciona dentro de um flex item
 }
 
-// truncamento em si (overflow/ellipsis/nowrap) é o .text-truncate do Bootstrap, no template
+// truncamento em si (overflow/ellipsis/nowrap) é o .text-truncate do Bootstrap, no template.
+// max-width menor no mobile: marca + botão não cabem lado a lado numa tela estreita com
+// nome/empresa longos, e a mesa quebra pra 2 linhas (.navbar sem -expand-md, flex-wrap:wrap
+// de propósito pra nunca vazar) -- mas o salto visual incomoda, então aperta o texto pra evitar
+// a quebra na maioria dos casos. Desktop tem espaço de sobra, fica bem mais largo.
 .account-btn__name {
     font-weight: 700;
     font-size: 0.9rem;
-    max-width: 10rem;
+    max-width: 6rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        max-width: 13rem;
+    }
 }
 
 .account-btn__company {
     font-size: 0.75rem;
     opacity: 0.85;
-    max-width: 10rem;
+    max-width: 6rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        max-width: 13rem;
+    }
 }
 
 .account-menu {
-    min-width: 16rem;
+    // menu alinhado à direita do botão (dropdown-menu-end no template) -- no mobile o botão
+    // pode estar tanto no fim da 1ª linha (perto da borda direita) quanto no início da 2ª
+    // linha (perto da esquerda, se marca+botão não couberem e quebrar). 16rem alinhado à
+    // direita de um botão que começa perto da borda esquerda vaza pra fora da tela à
+    // esquerda -- precisa ser estreito o bastante pra caber nos dois casos. 11rem (não 12rem):
+    // medido na prática em 320-360px, 12rem ainda vazava ~0.7px (sub-pixel, mas sem margem
+    // nenhuma) -- 11rem sobra margem de verdade em vez de ficar bem na borda.
+    min-width: 11rem;
+
+    @media (min-width: $account-widen-breakpoint) {
+        min-width: 16rem;
+    }
 }
 
 .theme-row {

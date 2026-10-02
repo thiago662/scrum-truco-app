@@ -5,6 +5,8 @@
             <span class="brand__text fw-bold">Scrum Truco</span>
         </a>
 
+        <!-- placement="bottom-end" (input do ngbDropdown) não estava alinhando à direita nessa
+        versão -- quem garante isso de verdade é a classe dropdown-menu-end abaixo, CSS puro -->
         <div ngbDropdown #accountDropdown="ngbDropdown" autoClose="outside" placement="bottom-end" class="d-inline-block">
             <button class="btn btn-primary account-btn" type="button" ngbDropdownToggle>
                 <span class="account-btn__avatar">
@@ -39,7 +41,7 @@
                 </div>
             </ng-template>
 
-            <div ngbDropdownMenu class="account-menu">
+            <div ngbDropdownMenu class="account-menu dropdown-menu-end">
                 @if (isLogged) {
                     <a ngbDropdownItem routerLink="/rooms" (click)="accountDropdown.close()">Minhas salas</a>
                     <button ngbDropdownItem type="button" (click)="open(contentmodal); accountDropdown.close()">Editar perfil</button>

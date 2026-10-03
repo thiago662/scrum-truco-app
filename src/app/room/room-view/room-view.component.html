@@ -45,14 +45,12 @@
 
         <ng-template #seatTpl let-member>
             <div class="seat">
-                @if (round) {
-                    @if (round.revealed) {
-                        <app-playing-card [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>
-                    } @else if (hasVoted(member.uid)) {
-                        <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
-                    } @else {
-                        <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
-                    }
+                @if (round?.revealed) {
+                    <app-playing-card [label]="votesLoaded ? voteLabel(member.uid) : '…'"></app-playing-card>
+                } @else if (hasVoted(member.uid)) {
+                    <app-playing-card face="back" role="img" aria-label="votou"></app-playing-card>
+                } @else {
+                    <app-playing-card face="empty" role="img" aria-label="aguardando"></app-playing-card>
                 }
                 <span class="seat__name">{{ member.name }}</span>
                 <span class="seat__badges">

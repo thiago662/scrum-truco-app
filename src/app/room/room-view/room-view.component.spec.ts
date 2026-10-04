@@ -13,6 +13,8 @@ import { PointingTypePickerComponent } from '../pointing-type-picker/pointing-ty
 import { PlayingCardComponent } from '../../shared/playing-card/playing-card.component';
 import { LogoMarkComponent } from '../../shared/logo-mark/logo-mark.component';
 import { Room } from '../../model/room.model';
+import { Round } from '../../model/round.model';
+import { POINTING_TYPES } from '../pointing-types';
 
 describe('RoomViewComponent', () => {
   let component: RoomViewComponent;
@@ -86,5 +88,44 @@ describe('RoomViewComponent', () => {
     component.isGuest = true;
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('.breadcrumb'))).toBeFalsy();
+  });
+
+  function fibonacciRound(): Round {
+    return {
+      text: 'Pauta', pointingType: POINTING_TYPES[0], startedBy: 'uid1',
+      revealed: true, voters: {},
+    };
+  }
+
+  it('agreementLabel conta quantos votaram igual ao valor mais votado', () => {
+    component.round = fibonacciRound();
+    component.votes = { a: { value: '5' }, b: { value: '5' }, c: { value: '8' } };
+    expect(component.agreementLabel).toBe('67% (2 de 3)');
+  });
+
+  it('agreementLabel mostra "sem maioria" em empate entre valores mais votados', () => {
+    component.round = fibonacciRound();
+    component.votes = { a: { value: '5' }, b: { value: '8' } };
+    expect(component.agreementLabel).toBe('sem maioria');
+  });
+
+  it('agreementLabel é "—" sem votos carregados', () => {
+    component.round = fibonacciRound();
+    component.votes = undefined;
+    expect(component.agreementLabel).toBe('—');
+  });
+
+  it('finalDiffText mostra a diferença entre o valor final decidido e a média calculada', () => {
+    component.round = fibonacciRound();
+    component.votes = { a: { value: '5' }, b: { value: '8' } };
+    // média = 6.5; decide "8" -> diferença +1.5
+    component.round.finalValue = '8';
+    expect(component.finalDiffText).toBe('+1.5 em relação à média');
+  });
+
+  it('finalDiffText é null sem valor final decidido', () => {
+    component.round = fibonacciRound();
+    component.votes = { a: { value: '5' } };
+    expect(component.finalDiffText).toBeNull();
   });
 });

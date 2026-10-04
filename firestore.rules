@@ -144,6 +144,12 @@ service cloud.firestore {
              .affectedKeys().hasOnly([request.auth.uid])
         && request.resource.data.voters[request.auth.uid] == true;
 
+      // decide (ou corrige) a nota final combinada depois da discussão -- só facilitador,
+      // só depois de revelado; pode ser trocada mais de uma vez, sem trava de "só uma vez"
+      allow update: if isFacilitator(room(roomId))
+        && onlyChangedKeys(['finalValue', 'finalSetBy', 'finalSetAt'])
+        && resource.data.revealed == true;
+
       match /votes/{uid} {
         function roundData() {
           return get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(roundId)).data;

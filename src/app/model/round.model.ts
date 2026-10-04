@@ -12,6 +12,11 @@ export interface Round {
     revealedBy?: string | null;
     // só "já votou", sem o valor: o valor fica em votes/{uid}, protegido pelas rules até revelar
     voters: { [uid: string]: true };
+    // nota combinada depois da discussão (pode diferir da média calculada); opcional,
+    // só o facilitador decide, só depois de revelado
+    finalValue?: string | null;
+    finalSetBy?: string | null;
+    finalSetAt?: any;
 }
 
 export interface Vote {

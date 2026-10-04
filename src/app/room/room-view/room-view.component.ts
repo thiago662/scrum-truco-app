@@ -362,4 +362,61 @@ export class RoomViewComponent implements OnInit, OnDestroy {
 
     await this.attempt(() => this.roundService.revealRound(this.id, this.round!.id!, this.userId!), 'Não foi possível revelar os votos.');
   }
+
+  async setFinalValue(label: string) {
+    if (this.round?.id == null || this.userId == null) {
+      return;
+    }
+
+    await this.attempt(() => this.roundService.setFinalValue(this.id, this.round!.id!, this.userId!, label), 'Não foi possível decidir o valor final.');
+  }
+
+  // % de quem votou igual ao valor mais votado -- funciona pra qualquer escala (numérica
+  // ou não), já que só conta votos iguais, sem precisar de peso/variância
+  get agreementLabel(): string {
+    if (this.votes == undefined) {
+      return '—';
+    }
+
+    const values = Object.values(this.votes).map((vote) => vote.value);
+    if (values.length === 0) {
+      return '—';
+    }
+
+    const counts = new Map<string, number>();
+    for (const value of values) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+
+    const max = Math.max(...counts.values());
+    const topLabels = [...counts.keys()].filter((label) => counts.get(label) === max);
+
+    if (topLabels.length > 1) {
+      return 'sem maioria';
+    }
+
+    const pct = Math.round((max / values.length) * 100);
+    return `${pct}% (${max} de ${values.length})`;
+  }
+
+  get finalWeight(): number | null {
+    if (!this.round?.finalValue) {
+      return null;
+    }
+
+    return weightOf(this.round.finalValue, this.options);
+  }
+
+  get finalDiffText(): string | null {
+    if (this.average == null || this.finalWeight == null) {
+      return null;
+    }
+
+    const diff = Math.round((this.finalWeight - this.average) * 100) / 100;
+    if (diff === 0) {
+      return 'igual à média calculada';
+    }
+
+    return `${diff > 0 ? '+' : ''}${diff} em relação à média`;
+  }
 }

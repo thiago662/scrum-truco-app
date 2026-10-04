@@ -41,7 +41,33 @@
                     <p class="mesa__pauta" id="roundTitle">{{ round.text }}</p>
                     @if (round.revealed) {
                         @if (votesLoaded) {
-                            <p class="mesa__results" id="results">Média: <strong>{{ averageText }}</strong> · Aproximada: <strong>{{ approximateLabel }}</strong></p>
+                            <p class="mesa__results" id="results">Média: <strong>{{ averageText }}</strong> · Aproximada: <strong>{{ approximateLabel }}</strong> · Entrosamento: <strong id="agreement">{{ agreementLabel }}</strong></p>
+
+                            @if (round.finalValue) {
+                                <p class="mesa__final" id="finalValue">
+                                    Valor final combinado: <strong>{{ round.finalValue }}</strong>
+                                    @if (finalDiffText) {
+                                        <span class="text-body-secondary">&nbsp;({{ finalDiffText }})</span>
+                                    }
+                                </p>
+                            }
+
+                            @if (isFacilitator) {
+                                <div class="mesa__final-picker" id="finalPicker">
+                                    <label class="form-label small text-body-secondary">Decidir valor final (depois da discussão)</label>
+                                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                                        @for (option of round.pointingType.options; track option.label) {
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm"
+                                                [class.btn-primary]="round.finalValue === option.label"
+                                                [class.btn-outline-secondary]="round.finalValue !== option.label"
+                                                (click)="setFinalValue(option.label)"
+                                            >{{ option.label }}</button>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         } @else {
                             <p class="mesa__results text-body-secondary">Carregando votos...</p>
                         }

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, FieldPath, collection, doc, onSnapshot, updateDoc, writeBatch, serverTimestamp, Unsubscribe } from '@angular/fire/firestore';
+import { Firestore, FieldPath, collection, doc, onSnapshot, writeBatch, serverTimestamp, Unsubscribe } from '@angular/fire/firestore';
 import { PointingType } from '../model/pointing-type.model';
 import { Round, Vote } from '../model/round.model';
 
@@ -57,6 +57,16 @@ export class RoundService {
     const batch = writeBatch(this.firestore);
 
     batch.update(this.roundRef(roomId, roundId), { revealed: true, revealedAt: serverTimestamp(), revealedBy: uid });
+    batch.update(doc(this.firestore, 'rooms', roomId), { lastActivityAt: serverTimestamp() });
+
+    await batch.commit();
+  }
+
+  // nota combinada depois da discussão; pode ser chamada de novo pra corrigir, sem trava
+  async setFinalValue(roomId: string, roundId: string, uid: string, value: string): Promise<void> {
+    const batch = writeBatch(this.firestore);
+
+    batch.update(this.roundRef(roomId, roundId), { finalValue: value, finalSetBy: uid, finalSetAt: serverTimestamp() });
     batch.update(doc(this.firestore, 'rooms', roomId), { lastActivityAt: serverTimestamp() });
 
     await batch.commit();

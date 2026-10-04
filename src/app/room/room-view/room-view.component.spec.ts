@@ -65,4 +65,26 @@ describe('RoomViewComponent', () => {
     expect(card).toBeTruthy();
     expect(card.face).toBe('empty');
   });
+
+  it('isGuest comeca true por padrao -- so vira false depois que ngOnInit confirma', () => {
+    expect(component.isGuest).toBeTrue();
+  });
+
+  it('mostra o breadcrumb pra quem está logado, mas nao pra convidado', () => {
+    const room = new Room('r1', 'Sala');
+    room.status = 'open';
+    room.ownerId = 'uid1';
+    component.room = room;
+    component.userId = 'uid1';
+    component.members = [{ uid: 'uid1', name: 'Fulano', role: 'owner', status: 'approved' }];
+    component.round = undefined;
+
+    component.isGuest = false;
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.breadcrumb'))).toBeTruthy();
+
+    component.isGuest = true;
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.breadcrumb'))).toBeFalsy();
+  });
 });

@@ -29,6 +29,9 @@ export class RoomViewComponent implements OnInit, OnDestroy {
   id: string;
   room: Room | undefined;
   userId: string | undefined;
+  // seguro por padrao: o breadcrumb (link pra /rooms, que o guard bloqueia pra convidado)
+  // so aparece depois que ngOnInit confirma que quem esta vendo nao e convidado
+  isGuest = true;
   members: MemberRow[] = [];
   joinName = '';
   errorMessage = '';
@@ -72,6 +75,7 @@ export class RoomViewComponent implements OnInit, OnDestroy {
       const user = (await this.authService.getCurrentUser()) ?? (await this.authService.loginAsGuest());
       this.userId = user.id;
       this.joinName = user.name ?? '';
+      this.isGuest = user.isGuest === true;
     } catch {
       this.errorMessage = 'Não foi possível entrar como convidado.';
       return;

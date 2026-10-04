@@ -32,6 +32,14 @@
     margin: 0.75rem 0 0;
 }
 
+.mesa__final {
+    margin: 0.5rem 0 0;
+}
+
+.mesa__final-picker {
+    margin-top: 1rem;
+}
+
 // fallback pra MAX_TABLE_SEATS+ (room-view.component.ts): grade normal, sempre coube,
 // só não parece "mesa".
 .mesa__seats {

@@ -21,9 +21,16 @@ O workflow `.github/workflows/deploy-pages.yml` roda checagem de tipos, testes (
 
 A config vai no JS publicado (é assim em qualquer app web Firebase); o secret só a mantém fora do código versionado. Para testar o build de publicação localmente: `npm run build:pages` (saída em `dist/pages/browser`).
 
-## Faxina de salas encerradas
+## Faxina de salas
 
-`.github/workflows/cleanup-rooms.yml` roda toda noite (e também sob demanda em Actions > Faxina de salas encerradas > Run workflow) e apaga salas encerradas com o prazo vencido — é o substituto ao TTL nativo do Firestore, que exigiria o plano pago Blaze. Configuração única:
+`.github/workflows/cleanup-rooms.yml` roda de 3 em 3 horas (e também sob demanda em Actions > Faxina de salas > Run workflow). É o substituto ao TTL nativo do Firestore, que exigiria o plano pago Blaze. A cada execução:
+
+1. apaga salas encerradas com o prazo vencido (12 h depois de encerrar; 1 h se a sala nunca teve rodada);
+2. fecha salas abertas abandonadas (60 min sem atividade), com mais de 24 h de vida, ou acima do teto de salas ativas do dono (5 por padrão; as menos ativas fecham primeiro). Contas com `unlimited` em `userLimits/{uid}` não têm teto.
+
+O GitHub desativa workflows agendados em repositório público sem nenhuma atividade por 60 dias: como o teto de salas agora depende desta faxina, um commit de vez em quando (ou o e-mail de aviso do GitHub) evita que ela pare sem ninguém notar.
+
+Testes: `npm run test:cron` (decisões + execução real contra o emulator; exige Java, o CLI do Firebase e `npm install --no-save firebase-admin@14.5.0`). Configuração única:
 
 1. Firebase Console > ⚙️ Configurações do projeto > **Contas de serviço** > **Gerar nova chave privada** (baixa um `.json`).
 2. Settings > Secrets and variables > Actions > **New repository secret**: nome `FIREBASE_SERVICE_ACCOUNT`, valor o conteúdo inteiro desse arquivo.

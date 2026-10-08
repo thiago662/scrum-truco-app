@@ -1,8 +1,11 @@
-name: Faxina de salas encerradas
+name: Faxina de salas
 
 on:
   schedule:
-    - cron: '0 6 * * *' # todo dia às 06:00 UTC (03:00 em horário de Brasília)
+    # de 3 em 3 horas: o prazo real de exclusão é o deleteAt + até este intervalo, e o teto de
+    # salas ativas só é aplicado aqui. O GitHub atrasa execuções agendadas sob carga, então não
+    # dá pra contar com o horário exato.
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -23,7 +26,7 @@ jobs:
 
       # Substituto ao TTL nativo do Firestore (exigiria plano pago Blaze): a conta de serviço
       # ignora firestore.rules e apaga direto as salas encerradas com deleteAt já vencido.
-      - name: Apagar salas encerradas vencidas
+      - name: Apagar salas vencidas e fechar abandonadas/excedentes
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node scripts/cleanup-rooms.mjs

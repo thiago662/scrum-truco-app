@@ -11,7 +11,8 @@
     "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI",
     "serve:ssr:scrum-truco-app": "node dist/scrum-truco-app/server/server.mjs",
     "emulators": "firebase emulators:start --only firestore,auth",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test test/firestore.rules.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore \"node --test test/firestore.rules.test.mjs\"",
+    "test:cron": "firebase emulators:exec --only firestore \"node --test test/cleanup-logic.test.mjs test/cleanup-rooms.integration.test.mjs\""
   },
   "private": true,
   "dependencies": {

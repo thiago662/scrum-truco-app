@@ -49,3 +49,6 @@ src/environments/firebase.config.ts
 *-debug.log
 .firebase/
 firebase-export-*/
+
+# Material de divulgação (imagens/texto de post, não é código do app)
+/linkedin-post

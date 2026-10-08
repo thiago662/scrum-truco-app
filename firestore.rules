@@ -47,7 +47,7 @@ service cloud.firestore {
         || (roomData.lastActivityAt is timestamp && request.time > roomData.lastActivityAt + duration.value(60, 'm'));
     }
 
-    // ---------- limites de uso (ver specs/limites-e-limpeza.md) ----------
+    // ---------- limites de uso (ver CLAUDE.md, seção "Limites de uso") ----------
     // Os padrões vivem aqui. config/limits (global) e userLimits/{uid} (por usuário) são
     // opcionais e só sobrescrevem; se não existirem, valem os padrões e nada trava.
     function limitsDoc() {

@@ -52,3 +52,6 @@ firebase-export-*/
 
 # Material de divulgação (imagens/texto de post, não é código do app)
 /linkedin-post
+
+# Specs e planos de trabalho: ficam só na máquina do dono, não vão pro repo público
+/specs

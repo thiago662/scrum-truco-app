@@ -2,6 +2,17 @@
     <h1 class="h3">Criar sala</h1>
     <p class="text-body-secondary">Dê um nome pra sala. A descrição é opcional.</p>
 
+    @if (limitReached) {
+        <div class="alert alert-warning" id="limitReached" role="alert">
+            Você já tem {{ activeRoomsCount }} salas ativas e o limite é {{ maxActiveRooms }}. Encerre uma em
+            <a routerLink="/rooms">Suas salas</a> pra criar outra.
+        </div>
+    }
+
+    @if (createError) {
+        <div class="alert alert-danger" id="createError" role="alert">Não foi possível criar a sala agora. Tente de novo.</div>
+    }
+
     <form [formGroup]="roomForm" class="form-page__card" (ngSubmit)="createRoom()">
         <div class="mb-3">
             <label for="title" class="form-label">Título</label>

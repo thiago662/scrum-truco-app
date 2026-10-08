@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, Timestamp, collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
+import { Firestore, Timestamp, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Room, RoomIndexEntry } from '../model/room.model';
 
@@ -122,6 +122,16 @@ export class RoomService {
 
   async removeFromUserIndex(uid: string, roomId: string): Promise<void> {
     await deleteDoc(doc(this.firestore, 'users', uid, 'rooms', roomId));
+  }
+
+  // Salas abertas que eu criei, que são as que contam pro teto de salas ativas. Rules não deixam
+  // listar `rooms`, então parte do índice users/{uid}/rooms (que também tem as salas em que só
+  // participo, por isso o filtro por ownerId).
+  async getOwnedOpenRooms(uid: string): Promise<Room[]> {
+    const entries = await getDocs(collection(this.firestore, 'users', uid, 'rooms'));
+    const rooms = await Promise.all(entries.docs.map((entry) => this.getRoom(entry.id)));
+
+    return rooms.filter((room): room is Room => room != null && room.ownerId === uid && room.status === 'open');
   }
 
   getUserRooms(uid: string): Observable<RoomIndexEntry[]> {

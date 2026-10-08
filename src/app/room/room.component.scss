@@ -19,6 +19,21 @@
     min-width: 200px;
 }
 
+// quem já passa do limite (contas anteriores ao teto) pode ter dezenas de salas abertas:
+// a lista rola em vez de empurrar a grade pra baixo
+.limit-list {
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+.limit-room {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+}
+
 .empty-state {
     border: 1px dashed var(--bs-border-color);
     border-radius: 1.25rem;

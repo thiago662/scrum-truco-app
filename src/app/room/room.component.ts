@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { RoomService, toMillis } from './room.service';
+import { LimitsService, Limits } from './limits.service';
 import { AuthService } from '../auth/auth.service';
 import { Room } from '../model/room.model';
 
@@ -12,6 +13,7 @@ type RoomCard = {
   id: string;
   title: string;
   status: 'open' | 'closed';
+  isOwner: boolean;
   roleLabel: string;
   activityLabel: string;
   avatarInitials: string[];
@@ -59,6 +61,7 @@ function toCard(room: Room, myUid: string): RoomCard {
     id: room.id!,
     title: room.title || '(sem título)',
     status: room.status === 'closed' ? 'closed' : 'open',
+    isOwner: room.ownerId === myUid,
     roleLabel,
     activityLabel: relativeLabel(room.lastActivityAt),
     avatarInitials,
@@ -76,6 +79,10 @@ export class RoomComponent implements OnInit, OnDestroy {
   loaded = false;
   loadError = false;
   filterText = '';
+  // null até carregar: o contador não aparece (nem o botão trava) antes de saber o limite
+  limits: Limits | null = null;
+  closingId: string | null = null;
+  closeError = false;
 
   private roomsSub?: Subscription;
   private platformId = inject(PLATFORM_ID);
@@ -86,6 +93,7 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   constructor(
     private roomService: RoomService,
+    private limitsService: LimitsService,
     private authService: AuthService,
   ) { }
 
@@ -109,6 +117,8 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
 
     const myUid = user.id;
+
+    this.limitsService.getLimits(myUid).then((limits) => this.limits = limits);
 
     // ponytail: refaz o getRoom de toda sala a cada emissão do índice, mesmo que só uma tenha
     // mudado — poucas dezenas de leitura por usuário, bem dentro do Spark. Cachear por
@@ -155,6 +165,40 @@ export class RoomComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.roomsSub?.unsubscribe();
     this.requestToken++;
+  }
+
+  // salas abertas que eu criei: as únicas que contam pro teto de salas ativas
+  get ownedOpenCards(): RoomCard[] {
+    return this.cards.filter((card) => card.isOwner && card.status === 'open');
+  }
+
+  get showLimitCounter(): boolean {
+    return this.limits != null && !this.limits.unlimited;
+  }
+
+  get atLimit(): boolean {
+    return this.limits != null && this.ownedOpenCards.length >= this.limits.maxActiveRooms;
+  }
+
+  async closeRoom(card: RoomCard) {
+    if (this.closingId != null) {
+      return;
+    }
+
+    this.closingId = card.id;
+    this.closeError = false;
+
+    try {
+      await this.roomService.closeRoom(card.id);
+      // fechar não mexe no índice users/{uid}/rooms, então o listener não reemite: atualiza aqui.
+      // O token invalida um carregamento em voo, que traria a sala ainda aberta e desfaria o encerrar.
+      card.status = 'closed';
+      this.requestToken++;
+    } catch {
+      this.closeError = true;
+    } finally {
+      this.closingId = null;
+    }
   }
 
   get filteredCards(): RoomCard[] {

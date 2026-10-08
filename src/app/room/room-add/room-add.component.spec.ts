@@ -32,4 +32,19 @@ describe('RoomAddComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('createRoom ignora o segundo clique enquanto o primeiro não terminou', async () => {
+    let release!: () => void;
+    const doCreate = spyOn<any>(component, 'doCreateRoom').and.returnValue(new Promise<void>((resolve) => release = resolve));
+
+    const first = component.createRoom();
+    await component.createRoom();
+
+    expect(doCreate).toHaveBeenCalledTimes(1);
+    expect(component.creating).toBeTrue();
+
+    release();
+    await first;
+    expect(component.creating).toBeFalse();
+  });
 });

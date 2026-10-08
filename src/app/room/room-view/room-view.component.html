@@ -20,11 +20,15 @@
     }
 
     @if (room && !myMember && room.status === 'open') {
-        <div class="mb-3">
-            <label for="joinName" class="form-label">Seu nome na sala</label>
-            <input type="text" class="form-control mb-2" id="joinName" [(ngModel)]="joinName">
-            <button type="button" class="btn btn-primary" (click)="requestJoin()">Pedir entrada</button>
-        </div>
+        @if (isFull) {
+            <div class="alert alert-warning" id="roomFull">Sala cheia ({{ members.length }}/{{ maxMembers }}). Peça pro dono liberar uma vaga.</div>
+        } @else {
+            <div class="mb-3">
+                <label for="joinName" class="form-label">Seu nome na sala</label>
+                <input type="text" class="form-control mb-2" id="joinName" [(ngModel)]="joinName">
+                <button type="button" class="btn btn-primary" (click)="requestJoin()">Pedir entrada</button>
+            </div>
+        }
     } @else if (myMember?.status === 'pending') {
         <div class="alert alert-info">Aguardando o dono da sala aprovar sua entrada...</div>
     } @else if (myMember?.status === 'approved') {

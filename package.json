@@ -10,7 +10,8 @@
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI",
     "serve:ssr:scrum-truco-app": "node dist/scrum-truco-app/server/server.mjs",
-    "emulators": "firebase emulators:start --only firestore,auth"
+    "emulators": "firebase emulators:start --only firestore,auth",
+    "test:rules": "firebase emulators:exec --only firestore \"node --test test/firestore.rules.test.mjs\""
   },
   "private": true,
   "dependencies": {
@@ -39,6 +40,7 @@
     "@angular/cli": "^17.1.0",
     "@angular/compiler-cli": "^17.1.0",
     "@angular/localize": "^17.1.1",
+    "@firebase/rules-unit-testing": "^3.0.4",
     "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^18.18.0",

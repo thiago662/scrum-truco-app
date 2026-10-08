@@ -90,6 +90,44 @@ describe('RoomViewComponent', () => {
     expect(fixture.debugElement.query(By.css('.breadcrumb'))).toBeFalsy();
   });
 
+  function roomWithMembers(count: number, maxMembers?: number): Room {
+    const room = new Room('r1', 'Sala');
+    room.status = 'open';
+    room.ownerId = 'owner';
+    room.maxMembers = maxMembers;
+    component.room = room;
+    component.userId = 'visitor';
+    component.members = Array.from({ length: count }, (_, i) => ({
+      uid: `u${i}`, name: `Pessoa ${i}`, role: (i === 0 ? 'owner' : 'member') as 'owner' | 'member', status: 'approved' as const,
+    }));
+    return room;
+  }
+
+  it('mostra "sala cheia" no lugar do pedido de entrada quando members chegou em maxMembers', () => {
+    roomWithMembers(3, 3);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('#roomFull'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('#joinName'))).toBeFalsy();
+  });
+
+  it('com vaga sobrando, mostra o formulário de pedido de entrada', () => {
+    roomWithMembers(2, 3);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('#roomFull'))).toBeFalsy();
+    expect(fixture.debugElement.query(By.css('#joinName'))).toBeTruthy();
+  });
+
+  it('sala sem maxMembers (anterior aos limites) usa o padrão de 8', () => {
+    roomWithMembers(8);
+    expect(component.maxMembers).toBe(8);
+    expect(component.isFull).toBeTrue();
+
+    roomWithMembers(7);
+    expect(component.isFull).toBeFalse();
+  });
+
   function fibonacciRound(): Round {
     return {
       text: 'Pauta', pointingType: POINTING_TYPES[0], startedBy: 'uid1',

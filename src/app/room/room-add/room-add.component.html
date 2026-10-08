@@ -14,7 +14,7 @@
         <button
             type="submit"
             class="btn btn-primary w-100"
-            [disabled]="!roomForm.value.title?.trim()"
+            [disabled]="!roomForm.value.title?.trim() || creating"
         >
             Criar sala
         </button>

@@ -14,6 +14,7 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - `npm run test:ci` — testes Karma/Jasmine headless (launcher `ChromeHeadlessCI` com `--no-sandbox`, definido em `karma.conf.js`); é o mesmo comando do CI. `ng test` abre o Chrome em modo watch. Um spec só: `npm run test:ci -- --include='**/x.spec.ts'`
 - `npx tsc -p tsconfig.app.json --noEmit` — checagem de tipos rápida (o `ng build` só pega erro de template)
 - `npm run emulators` — Firestore + Auth Emulator locais (exige Java no PATH)
+- `npm run test:rules` — testes de `firestore.rules` (`test/firestore.rules.test.mjs`, `node --test` + `@firebase/rules-unit-testing`) dentro de `firebase emulators:exec`; exige Java e o CLI do Firebase. Roda só local, não está no CI. Ao mexer em rules, adicionar/rodar os casos aqui: o log do emulator mostra um "evaluation error" por caso negado (é a passada de pré-busca de `get`/`exists`); o que vale é o `false` final.
 - `firebase deploy --only firestore:rules` — publica `firestore.rules` no projeto real (`.firebaserc`); pede `firebase login` prévio
 - Não há script de lint.
 
@@ -26,6 +27,8 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - `rooms/{id}/rounds/{rid}`: `text`, `pointingType` (snapshot da escala), `revealed` (só false→true), `voters{uid:true}` (só "já votou")
 - `rooms/{id}/rounds/{rid}/votes/{uid}`: `{value}` — **um doc por voto porque rules não restringem por campo**; leitura só do autor até `revealed`
 - `users/{uid}/rooms/{roomId}`: índice de "minhas salas", escrito só pelo próprio usuário
+- `rooms/{id}.maxMembers`: teto de participantes (aprovados **e** pendentes) gravado na criação; imutável. Sem o campo = 8. Ver "Limites de uso".
+- `config/limits` (global) e `userLimits/{uid}` (por usuário): docs **opcionais** de limite; o cliente só lê, quem escreve é o console/Admin SDK.
 
 **Sala** (`src/app/room/`): `RoomService` (sala/membros), `RoundService` (rodada/votos), `room-view` orquestra listeners. Papéis: dono (aprova/remove, encerra, elege controlador), controlador (inicia/revela rodada), participante (vota). Convidado entra pelo link, fica `pending` até o dono aprovar.
 
@@ -40,6 +43,16 @@ Scrum Truco — app Angular 17 de planning poker: uma sala onde o time estima ta
 - **Config do Firebase fica fora do git**: a real está em `src/environments/firebase.config.ts` e `.firebaserc` (ambos no `.gitignore`, só existem na máquina do dono); os `environment*.ts` apenas importam dela, e há `*.example` em branco no repo. Sem `firebase.config.ts`, build e testes não compilam (ver README). Nunca colocar a config real em arquivo versionado nem commitar build (`dist/`, `docs/`), porque o JS gerado a embute. Ela não é segredo (vai no JS publicado), mas o dono quer o repo público sem apontar pro projeto dele; a apiKey antiga já está no histórico e a proteção real são regras + restrição da key no Google Cloud.
 - Só conta cadastrada cria sala (regra `sign_in_provider != 'anonymous'`); convidado só entra/vota.
 - Convidado anônimo perde o acesso ao trocar de navegador/limpar dados (novo uid, volta a `pending`).
+
+## Limites de uso
+
+Spec e plano em fases: `specs/limites-e-limpeza.md` (lá estão parâmetros, cron v2, conta ilimitada e purge). Estado: **fase 1 (pessoas por sala) feita**; as demais estão como checklist na spec.
+
+- O padrão de pessoas (8) vive em `firestore.rules` (`defaultMaxMembers()`) e em `limits.service.ts` (`DEFAULT_MAX_MEMBERS`), mantidos em sincronia à mão (o teto de salas ativas entra na fase 2). Precedência: `userLimits/{uid}` → `config/limits` → padrão; `unlimited: true` ignora os números (pessoas = 1000, mesmo valor nos dois lados). Só inteiro vale nos dois lados (valor digitado errado no console cai pro próximo nível). Nenhum doc existente = padrões, então apagar um doc não trava nada.
+- **Pessoas por sala é garantido pelas rules**: a criação valida `maxMembers` ≤ limite efetivo do dono (campo opcional, pra cliente antigo); o pedido de entrada exige `members.size() < maxMembers`; o dono não infla `members` além do teto (sala antiga acima dele só pode encolher). Pendentes contam (também limitam o crescimento do doc). Aprovar não muda o tamanho.
+- **Salas ativas por usuário não dá pra garantir nas rules** (rules não contam documentos): a spec prevê checagem no cliente + varredura do cron.
+- Mudar limite sem deploy: editar `config/limits` ou `userLimits/{uid}` no console do Firestore (vale pra salas **novas**; `maxMembers` já gravado numa sala não muda). Override é por **uid**; e-mail do dono nunca vai em arquivo versionado (repo público).
+- Deploy de rules que mudam o que o cliente escreve: publicar `firestore.rules` **antes** do merge (são retrocompatíveis), com `firebase deploy --only firestore:rules` rodado pelo dono.
 
 ## Encerramento automático (fase 2)
 

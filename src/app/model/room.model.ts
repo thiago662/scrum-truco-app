@@ -21,6 +21,10 @@ export class Room {
     status?: 'open' | 'closed';
     currentRoundId?: string | null;
     members?: { [uid: string]: RoomMember };
+    // teto de participantes (aprovados + pendentes), gravado na criação a partir do limite do
+    // dono; as rules recusam novos pedidos de entrada quando members.size() chega nele.
+    // Sala sem o campo (anterior aos limites) usa DEFAULT_MAX_MEMBERS.
+    maxMembers?: number;
     lastActivityAt?: any;
     ownerLastSeen?: any;
     createdAt?: any;

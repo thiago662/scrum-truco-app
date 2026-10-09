@@ -30,12 +30,30 @@ A config vai no JS publicado (é assim em qualquer app web Firebase); o secret s
 
 O GitHub desativa workflows agendados em repositório público sem nenhuma atividade por 60 dias: como o teto de salas agora depende desta faxina, um commit de vez em quando (ou o e-mail de aviso do GitHub) evita que ela pare sem ninguém notar.
 
-Testes: `npm run test:cron` (decisões + execução real contra o emulator; exige Java, o CLI do Firebase e `npm install --no-save firebase-admin@14.5.0`). Configuração única:
+Testes: `npm run test:cron` (decisões + execução real dos scripts de faxina e purge contra os emuladores de Firestore e Auth; exige Java, o CLI do Firebase e `npm install --no-save firebase-admin@14.5.0`). Configuração única:
 
 1. Firebase Console > ⚙️ Configurações do projeto > **Contas de serviço** > **Gerar nova chave privada** (baixa um `.json`).
 2. Settings > Secrets and variables > Actions > **New repository secret**: nome `FIREBASE_SERVICE_ACCOUNT`, valor o conteúdo inteiro desse arquivo.
 
 Essa credencial ignora `firestore.rules` — guarde-a só como secret, nunca commitada.
+
+## Limites de uso e conta ilimitada
+
+Padrões: 5 salas ativas por conta e 8 pessoas por sala (aprovados + pendentes). Os dois são opcionais de sobrescrever, **no console do Firestore, sem deploy** (vale pra salas novas):
+
+- `config/limits` (global): `{ maxActiveRooms: 5, maxMembers: 8 }`, qualquer um dos campos.
+- `userLimits/{uid}` (por conta): `{ maxActiveRooms, maxMembers }` ou `{ unlimited: true }`. Vence o global. Só número inteiro vale; valor digitado errado é ignorado.
+
+**Conta ilimitada por e-mail** (sem mexer no console): cadastre a conta no app com o e-mail, crie o secret `ADMIN_EMAILS` (e-mails separados por vírgula) em Settings > Secrets and variables > Actions e rode Actions > Faxina de salas > Run workflow (ou espere a próxima execução). Ela grava `userLimits/{uid}.unlimited = true` e só concede: pra revogar, apague o doc no console. Cadastre a conta **antes** de pôr o e-mail no secret: o app não verifica e-mail, e a conta é de quem cadastrou primeiro. Depois da primeira execução, confira no Firebase Console > Authentication que o uid que começa com o prefixo do log (`Conta ilimitada garantida: abc123…`) é o da sua conta. Um e-mail mal digitado no secret só gera um aviso no log, não derruba a faxina. O repositório é público, por isso o e-mail só vive no secret.
+
+## Limpar a base antes de divulgar
+
+Actions > **Limpar a base (manual)** > Run workflow. Precisa do secret `KEEP_EMAILS` (e-mails que **não** serão apagados, separados por vírgula; pode ser o mesmo valor de `ADMIN_EMAILS`).
+
+1. Rode primeiro em `dry-run` (o padrão): o log mostra só contagens (salas, contas, perfis), sem e-mail nem título.
+2. Conferindo os números, rode de novo com o modo `apagar`.
+
+Apaga **todas** as salas (com rodadas e votos) e todas as contas do Auth, perfis e `userLimits` fora de `KEEP_EMAILS`; mantém o perfil e o `userLimits` das contas mantidas e o `config/limits`. Não tem volta, e não bloqueia ninguém: rode antes de divulgar, quando não há ninguém usando (quem criar sala ou conta durante a execução escapa dela). Se falhar no meio, rode de novo: é idempotente. O script recusa rodar sem `KEEP_EMAILS` ou se nenhum e-mail dela tiver conta (e-mail digitado errado). Localmente: `FIREBASE_SERVICE_ACCOUNT=... KEEP_EMAILS=... node scripts/purge-data.mjs [--confirm]`.
 
 `firebase.config.ts` e `.firebaserc` estão no `.gitignore`. A config do Firebase não é segredo (vai no JS do site), o que protege os dados são as regras do Firestore (`firestore.rules`) e a restrição da API key no Google Cloud Console.
 

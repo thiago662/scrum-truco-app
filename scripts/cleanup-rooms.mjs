@@ -1,37 +1,41 @@
 // Faxina das salas. Roda via GitHub Actions agendado (.github/workflows/cleanup-rooms.yml), usando
 // uma conta de serviço que ignora firestore.rules — é o substituto ao TTL nativo do Firestore, que
-// exigiria o plano pago Blaze (ver CLAUDE.md). Dois passos, nesta ordem:
+// exigiria o plano pago Blaze (ver CLAUDE.md). Passos, nesta ordem:
+//   0. (só com o secret ADMIN_EMAILS) garante a conta ilimitada de cada e-mail da lista;
 //   1. apaga salas encerradas com deleteAt vencido;
 //   2. fecha salas abertas abandonadas (sem atividade), velhas demais (24h) ou acima do teto de
 //      salas ativas do dono (as menos ativas primeiro) -- as decisões ficam em cleanup-logic.mjs.
 //      O fechamento grava deleteAt, então o passo 1 de uma próxima execução apaga a sala.
-import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { initAdmin, parseEmails } from './admin-init.mjs';
 import { planClosures, reasonStillApplies, retentionMs } from './cleanup-logic.mjs';
 
-if (process.env.FIRESTORE_EMULATOR_HOST) {
-  // O Admin SDK manda tudo pro emulator quando essa variável existe, com ou sem credencial. Sem o
-  // opt-in, uma variável esquecida no shell faria a "faxina de produção" rodar no emulator, em silêncio.
-  if (process.env.CLEANUP_ALLOW_EMULATOR !== '1') {
-    console.error('FIRESTORE_EMULATOR_HOST está definido: a faxina rodaria no emulator, não em produção. Limpe a variável (ou use CLEANUP_ALLOW_EMULATOR=1, só nos testes).');
-    process.exit(1);
-  }
-
-  // testes (npm run test:cron): sem credencial
-  initializeApp({ projectId: process.env.GCLOUD_PROJECT ?? 'demo-cleanup-test' });
-} else {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-
-  if (!raw) {
-    console.error('Env FIREBASE_SERVICE_ACCOUNT ausente (ver README).');
-    process.exit(1);
-  }
-
-  initializeApp({ credential: cert(JSON.parse(raw)) });
-}
+initAdmin();
 
 const db = getFirestore();
 let failures = 0;
+
+// ---------- 0. contas ilimitadas (secret ADMIN_EMAILS) ----------
+// Garante userLimits/{uid}.unlimited = true pra cada e-mail da lista, antes de ler os limites (o
+// teto de salas abaixo já vale pra elas na mesma execução). Só concede, nunca revoga: pra revogar,
+// apague o doc no console. E-mail sem conta ainda é ignorado (cadastre-se no app primeiro; ver
+// README). Log sem e-mail: só uid abreviado.
+for (const email of parseEmails(process.env.ADMIN_EMAILS)) {
+  try {
+    const { uid } = await getAuth().getUserByEmail(email);
+    await db.collection('userLimits').doc(uid).set({ unlimited: true }, { merge: true });
+    console.log(`Conta ilimitada garantida: ${uid.slice(0, 6)}…`);
+  } catch (error) {
+    if (error.code === 'auth/user-not-found') {
+      console.log('ADMIN_EMAILS: um e-mail ainda não tem conta; ignorado.');
+    } else {
+      // só aviso, sem falhar a execução: um e-mail mal digitado no secret deixaria a faxina
+      // vermelha a cada 3h e esconderia falha de limpeza de verdade. Tenta de novo na próxima.
+      console.warn(`Aviso: não garantiu uma conta ilimitada (${error.code ?? 'erro'}); confira o secret ADMIN_EMAILS.`);
+    }
+  }
+}
 
 // ---------- 1. apagar encerradas e vencidas ----------
 const dueSnapshot = await db.collection('rooms')

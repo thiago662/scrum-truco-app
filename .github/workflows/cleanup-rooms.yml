@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+# evita duas faxinas ao mesmo tempo (grupo separado do da purge manual: ver purge-data.yml)
+concurrency:
+  group: faxina-salas
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -29,4 +34,6 @@ jobs:
       - name: Apagar salas vencidas e fechar abandonadas/excedentes
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # opcional: e-mails (separados por vírgula) que ganham conta ilimitada; fora do repo
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
         run: node scripts/cleanup-rooms.mjs

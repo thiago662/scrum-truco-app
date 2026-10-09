@@ -9,6 +9,7 @@ let admin;
 try {
   admin = {
     app: await import('firebase-admin/app'),
+    auth: await import('firebase-admin/auth'),
     firestore: await import('firebase-admin/firestore'),
   };
 } catch {
@@ -34,8 +35,11 @@ describe('cleanup-rooms.mjs contra o emulator', () => {
   });
   const put = (id, over) => db.collection('rooms').doc(id).set(room(over));
   const get = async (id) => (await db.collection('rooms').doc(id).get());
-  const run = (env = { CLEANUP_ALLOW_EMULATOR: '1' }) =>
-    spawnSync(process.execPath, ['scripts/cleanup-rooms.mjs'], { env: { ...process.env, ...env }, encoding: 'utf8' });
+  // ADMIN_EMAILS zerado por padrão: um valor exportado no shell de quem roda não pode vazar pro teste
+  const run = (env = {}) => spawnSync(process.execPath, ['scripts/cleanup-rooms.mjs'], {
+    env: { ...process.env, ALLOW_EMULATOR: '1', ADMIN_EMAILS: '', ...env },
+    encoding: 'utf8',
+  });
 
   before(async () => {
     assert.ok(admin, 'firebase-admin não instalado: npm install --no-save firebase-admin@14.5.0');
@@ -50,6 +54,9 @@ describe('cleanup-rooms.mjs contra o emulator', () => {
     for (const name of ['rooms', 'users', 'userLimits', 'config']) {
       await db.recursiveDelete(db.collection(name));
     }
+    // emulator persistente (npm run emulators) pode ter sobra de uma execução anterior
+    const oldUsers = (await admin.auth.getAuth().listUsers()).users.map((user) => user.uid);
+    if (oldUsers.length > 0) await admin.auth.getAuth().deleteUsers(oldUsers);
 
     // abandonadas / velhas
     await put('stale', { lastActivityAt: ts(now - 2 * HOUR), currentRoundId: 'rd1' });
@@ -124,16 +131,50 @@ describe('cleanup-rooms.mjs contra o emulator', () => {
     assert.match(output, /Fechada \(teto\): c6/);
   });
 
-  it('FIRESTORE_EMULATOR_HOST esquecido no shell não faz a faxina rodar no emulator sem querer', () => {
-    const result = run({ CLEANUP_ALLOW_EMULATOR: '' });
+  it('variável de emulator esquecida no shell não faz a faxina rodar no emulator sem querer', () => {
+    const result = run({ ALLOW_EMULATOR: '' });
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /FIRESTORE_EMULATOR_HOST está definido/);
+    assert.match(result.stderr, /Variável de emulator definida/);
   });
 
   it('rodar de novo é inofensivo: nada mais a fechar além do que já foi', () => {
     const second = run();
     assert.equal(second.status, 0, second.stdout + second.stderr);
     assert.match(second.stdout, /Fechadas: 0 inativa\(s\), 0 velha\(s\), 0 acima do teto\./);
+  });
+
+  it('ADMIN_EMAILS: dá conta ilimitada (já na mesma execução), mantém o que já havia, ignora e-mail sem conta e não loga e-mail', async () => {
+    await admin.auth.getAuth().createUser({ uid: 'admin1', email: 'dono@example.com' });
+    await db.collection('userLimits').doc('admin1').set({ maxMembers: 3 });
+    // 7 salas vivas do admin: o teto (5) fecharia 2 se a conta não virasse ilimitada antes da leitura dos limites
+    for (let n = 1; n <= 7; n++) await put(`adm${n}`, { ownerId: 'admin1', lastActivityAt: ts(Date.now() - n * MIN) });
+
+    const result = run({ ALLOW_EMULATOR: '1', ADMIN_EMAILS: 'dono@example.com, ninguem@example.com' });
+    const out = result.stdout + result.stderr;
+
+    assert.equal(result.status, 0, out);
+    assert.deepEqual((await db.collection('userLimits').doc('admin1').get()).data(), { maxMembers: 3, unlimited: true });
+    for (let n = 1; n <= 7; n++) assert.equal(await status(`adm${n}`), 'open');
+    assert.match(out, /Conta ilimitada garantida: admin1…/);
+    assert.match(out, /um e-mail ainda não tem conta/);
+    assert.ok(!out.includes('dono@example.com') && !out.includes('ninguem@example.com'));
+  });
+
+  it('e-mail malformado em ADMIN_EMAILS vira aviso: a faxina não fica vermelha e o e-mail não vai pro log', () => {
+    const result = run({ ADMIN_EMAILS: 'isto-nao-e-email' });
+    const text = result.stdout + result.stderr;
+
+    assert.equal(result.status, 0, text);
+    assert.match(text, /Aviso: não garantiu uma conta ilimitada/);
+    assert.ok(!text.includes('isto-nao-e-email'));
+  });
+
+  it('sem ADMIN_EMAILS não mexe em userLimits', async () => {
+    const before = (await db.collection('userLimits').get()).size;
+    const result = run();
+
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal((await db.collection('userLimits').get()).size, before);
   });
 });

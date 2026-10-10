@@ -37,23 +37,6 @@ Testes: `npm run test:cron` (decisões + execução real dos scripts de faxina e
 
 Essa credencial ignora `firestore.rules` — guarde-a só como secret, nunca commitada.
 
-## Rodar localmente com emuladores (sem tocar na produção)
-
-O dev server normal (`npm start`) fala com o Firebase real. Pra testar com segurança, use os emuladores de Firestore e Auth (exige Java):
-
-1. Terminal 1: `npm run emulators` (Firestore em 8080, Auth em 9099, painel em http://localhost:4000).
-2. Terminal 2: `npm run start:emulator` e abra http://localhost:4200. A config é falsa (`src/environments/environment.emulator.ts`, projeto `demo-scrum-truco`), então não há como atingir a produção. Cadastre contas à vontade; os dados somem quando os emuladores caem. As `firestore.rules` do repositório valem lá.
-3. Mexer nos limites: painel do emulador (http://localhost:4000/firestore) > crie `config/limits` com `{ maxMembers: 2, maxActiveRooms: 2 }`, ou `userLimits/<uid>` com `{ unlimited: true }` (o uid aparece em Authentication).
-4. Faxina e purge contra o emulador: `npm run local:cleanup`; `npm run local:purge` (dry-run) e `npm run local:purge -- --confirm`, com `KEEP_EMAILS` no ambiente (PowerShell: `$env:KEEP_EMAILS='voce@exemplo.com'; npm run local:purge`). Precisa de `npm install --no-save firebase-admin@14.5.0`. Esses scripts forçam o emulador: nunca usam credencial real.
-
-Roteiro de conferência (foi assim que a verificação ponta a ponta foi feita):
-
-- **Pessoas por sala:** com `maxMembers: 2`, crie uma sala; em uma janela anônima abra o link e peça entrada; em outra janela anônima o link mostra "Sala cheia (2/2)".
-- **Teto de salas:** com `maxActiveRooms: 2` e 2 salas abertas, "Suas salas" mostra "2 de 2 salas ativas", trava "+ Nova sala" e lista as salas com "Encerrar"; encerrar uma libera o botão.
-- **Conta ilimitada:** com `userLimits/<seu uid>` = `{ unlimited: true }`, o contador e o aviso somem.
-- **Faxina:** no painel, mude `lastActivityAt` de uma sala aberta pra 2 horas atrás e rode `npm run local:cleanup`: a sala vira "encerrada" no app. Uma sala encerrada com `deleteAt` no passado é apagada.
-- **Purge:** `npm run local:purge` mostra o que apagaria (contas anônimas incluídas); com `--confirm` só sobra a conta de `KEEP_EMAILS`.
-
 ## Limites de uso e conta ilimitada
 
 Padrões: 5 salas ativas por conta e 8 pessoas por sala (aprovados + pendentes). Os dois são opcionais de sobrescrever, **no console do Firestore, sem deploy** (vale pra salas novas):

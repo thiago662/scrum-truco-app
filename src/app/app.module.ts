@@ -5,8 +5,8 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
-import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
-import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
+import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { getAuth, provideAuth } from '@angular/fire/auth';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -46,21 +46,8 @@ import { PlayingCardComponent } from './shared/playing-card/playing-card.compone
   providers: [
     provideClientHydration(),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    // portas de firebase.json; só no ambiente "emulator" (npm run start:emulator)
-    provideFirestore(() => {
-      const firestore = getFirestore();
-      if (environment.useEmulators) {
-        connectFirestoreEmulator(firestore, 'localhost', 8080);
-      }
-      return firestore;
-    }),
-    provideAuth(() => {
-      const auth = getAuth();
-      if (environment.useEmulators) {
-        connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-      }
-      return auth;
-    }),
+    provideFirestore(() => getFirestore()),
+    provideAuth(() => getAuth()),
   ],
   bootstrap: [AppComponent]
 })

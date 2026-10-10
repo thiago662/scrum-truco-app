@@ -10,7 +10,10 @@
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI",
     "serve:ssr:scrum-truco-app": "node dist/scrum-truco-app/server/server.mjs",
-    "emulators": "firebase emulators:start --only firestore,auth",
+    "emulators": "firebase emulators:start --only firestore,auth --project demo-scrum-truco",
+    "start:emulator": "ng serve --configuration emulator",
+    "local:cleanup": "node scripts/local-admin.mjs cleanup-rooms",
+    "local:purge": "node scripts/local-admin.mjs purge-data",
     "test:rules": "firebase emulators:exec --only firestore \"node --test test/firestore.rules.test.mjs\"",
     "test:cron": "firebase emulators:exec --only firestore,auth \"node --test test/cleanup-logic.test.mjs test/cleanup-rooms.integration.test.mjs test/purge-data.integration.test.mjs\""
   },

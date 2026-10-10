@@ -72,6 +72,17 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "emulator": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.emulator.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -119,6 +130,9 @@
             },
             "development": {
               "buildTarget": "scrum-truco-app:build:development"
+            },
+            "emulator": {
+              "buildTarget": "scrum-truco-app:build:emulator"
             }
           },
           "defaultConfiguration": "development"

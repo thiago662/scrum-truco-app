@@ -1,0 +1,49 @@
+name: Limpar a base (manual)
+
+# Só manual. O modo padrão é dry-run (só conta o que apagaria); "apagar" é deleção em produção:
+# todas as salas e todas as contas, menos as de KEEP_EMAILS. Ver scripts/purge-data.mjs e README.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'dry-run só conta; apagar executa de verdade'
+        type: choice
+        options:
+          - dry-run
+          - apagar
+        default: dry-run
+
+permissions:
+  contents: read
+
+# Grupo próprio de propósito: o GitHub guarda só UMA execução pendente por grupo e cancela a
+# anterior quando entra outra, então dividir o grupo com a faxina agendada podia cancelar esta
+# purge em silêncio. As duas só apagam, de forma idempotente, e podem se sobrepor sem problema.
+concurrency:
+  group: purge-base
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # firebase-admin@14 exige Node >=22
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --no-save firebase-admin@14.5.0
+
+      - name: Limpar a base (dry-run, a menos que o modo seja "apagar")
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          KEEP_EMAILS: ${{ secrets.KEEP_EMAILS }}
+          MODO: ${{ inputs.modo }}
+        run: |
+          if [ "$MODO" = "apagar" ]; then
+            node scripts/purge-data.mjs --confirm
+          else
+            node scripts/purge-data.mjs
+          fi

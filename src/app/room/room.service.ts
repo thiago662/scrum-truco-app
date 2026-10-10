@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, Timestamp, collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
+import { Firestore, Timestamp, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, collectionData, serverTimestamp, deleteField, FieldPath, Unsubscribe } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Room, RoomIndexEntry } from '../model/room.model';
 
@@ -8,7 +8,14 @@ import { Room, RoomIndexEntry } from '../model/room.model';
 export const HEARTBEAT_INTERVAL_MS = 45_000;
 export const OWNER_GONE_TOLERANCE_MS = 2 * 60_000;
 export const INACTIVITY_TOLERANCE_MS = 60 * 60_000;
-export const DELETE_AFTER_CLOSE_MS = 24 * 60 * 60_000;
+// Retenção depois de encerrar (o cron apaga quando vence; scripts/cleanup-logic.mjs usa os mesmos
+// valores). Sala encerrada sem nenhuma rodada não tem nada pra rever: some logo.
+export const DELETE_AFTER_CLOSE_MS = 12 * 60 * 60_000;
+export const DELETE_AFTER_CLOSE_EMPTY_MS = 60 * 60_000;
+
+export function retentionAfterClose(hadRounds: boolean): number {
+  return hadRounds ? DELETE_AFTER_CLOSE_MS : DELETE_AFTER_CLOSE_EMPTY_MS;
+}
 // mais curto que as tolerâncias acima só pra reagir num tempo razoável, sem sobrecarregar
 export const STALE_CHECK_INTERVAL_MS = 30_000;
 
@@ -76,9 +83,16 @@ export class RoomService {
   }
 
   async closeRoom(id: string): Promise<void> {
-    await updateDoc(doc(this.firestore, 'rooms', id), {
+    const roomRef = doc(this.firestore, 'rooms', id);
+
+    // lê a sala na hora: quem chama (dashboard, tela da sala) pode ter uma cópia velha, e uma
+    // retenção curta demais apagaria o histórico de uma sala que ganhou rodada nesse meio tempo.
+    // Se a leitura falhar, assume que teve rodada (o prazo longo é o lado seguro).
+    const hadRounds = await getDoc(roomRef).then((snapshot) => snapshot.data()?.['currentRoundId'] != null).catch(() => true);
+
+    await updateDoc(roomRef, {
       status: 'closed',
-      deleteAt: Timestamp.fromMillis(Date.now() + DELETE_AFTER_CLOSE_MS),
+      deleteAt: Timestamp.fromMillis(Date.now() + retentionAfterClose(hadRounds)),
     });
   }
 
@@ -122,6 +136,16 @@ export class RoomService {
 
   async removeFromUserIndex(uid: string, roomId: string): Promise<void> {
     await deleteDoc(doc(this.firestore, 'users', uid, 'rooms', roomId));
+  }
+
+  // Salas abertas que eu criei, que são as que contam pro teto de salas ativas. Rules não deixam
+  // listar `rooms`, então parte do índice users/{uid}/rooms (que também tem as salas em que só
+  // participo, por isso o filtro por ownerId).
+  async getOwnedOpenRooms(uid: string): Promise<Room[]> {
+    const entries = await getDocs(collection(this.firestore, 'users', uid, 'rooms'));
+    const rooms = await Promise.all(entries.docs.map((entry) => this.getRoom(entry.id)));
+
+    return rooms.filter((room): room is Room => room != null && room.ownerId === uid && room.status === 'open');
   }
 
   getUserRooms(uid: string): Observable<RoomIndexEntry[]> {

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Unsubscribe } from '@angular/fire/firestore';
 import { RoomService, STALE_CHECK_INTERVAL_MS } from '../room.service';
 import { RoundService } from '../round.service';
+import { DEFAULT_MAX_MEMBERS } from '../limits.service';
 import { AuthService } from '../../auth/auth.service';
 import { Room, RoomMember } from '../../model/room.model';
 import { Round, Vote } from '../../model/round.model';
@@ -232,6 +233,15 @@ export class RoomViewComponent implements OnInit, OnDestroy {
     return this.members.filter((member) => member.status === 'pending');
   }
 
+  get maxMembers(): number {
+    return this.room?.maxMembers ?? DEFAULT_MAX_MEMBERS;
+  }
+
+  // aprovados + pendentes: é o que as rules contam pra recusar novos pedidos de entrada
+  get isFull(): boolean {
+    return this.members.length >= this.maxMembers;
+  }
+
   get useTableSeats(): boolean {
     return this.approvedMembers.length > 0 && this.approvedMembers.length <= MAX_TABLE_SEATS;
   }
@@ -302,7 +312,7 @@ export class RoomViewComponent implements OnInit, OnDestroy {
       return;
     }
 
-    await this.attempt(() => this.roomService.requestJoin(this.id, this.userId!, name), 'Não foi possível pedir entrada na sala.');
+    await this.attempt(() => this.roomService.requestJoin(this.id, this.userId!, name), 'Não foi possível pedir entrada na sala. Ela pode ter acabado de lotar.');
   }
 
   async copyLink() {

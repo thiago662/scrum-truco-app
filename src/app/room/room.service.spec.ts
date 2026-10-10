@@ -3,7 +3,7 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { environment } from '../../environments/environment';
 
-import { RoomService, OWNER_GONE_TOLERANCE_MS, INACTIVITY_TOLERANCE_MS } from './room.service';
+import { RoomService, OWNER_GONE_TOLERANCE_MS, INACTIVITY_TOLERANCE_MS, DELETE_AFTER_CLOSE_MS, DELETE_AFTER_CLOSE_EMPTY_MS, retentionAfterClose } from './room.service';
 import { Room } from '../model/room.model';
 
 const fakeTimestamp = (ms: number) => ({ toMillis: () => ms });
@@ -23,6 +23,15 @@ describe('RoomService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('retentionAfterClose: sala com rodada fica 12h, sala vazia só 1h', () => {
+    expect(retentionAfterClose(true)).toBe(DELETE_AFTER_CLOSE_MS);
+    expect(retentionAfterClose(false)).toBe(DELETE_AFTER_CLOSE_EMPTY_MS);
+    expect(DELETE_AFTER_CLOSE_MS).toBe(12 * 60 * 60_000);
+    expect(DELETE_AFTER_CLOSE_EMPTY_MS).toBe(60 * 60_000);
+    // as rules só aceitam deleteAt até 48h depois de agora
+    expect(DELETE_AFTER_CLOSE_MS).toBeLessThan(48 * 60 * 60_000);
   });
 
   describe('checkStaleAndClose', () => {

@@ -47,6 +47,40 @@ service cloud.firestore {
         || (roomData.lastActivityAt is timestamp && request.time > roomData.lastActivityAt + duration.value(60, 'm'));
     }
 
+    // ---------- limites de uso (ver CLAUDE.md, seção "Limites de uso") ----------
+    // Os padrões vivem aqui. config/limits (global) e userLimits/{uid} (por usuário) são
+    // opcionais e só sobrescrevem; se não existirem, valem os padrões e nada trava.
+    function limitsDoc() {
+      return exists(/databases/$(database)/documents/config/limits)
+        ? get(/databases/$(database)/documents/config/limits).data
+        : {};
+    }
+
+    function userLimitsDoc(uid) {
+      return exists(/databases/$(database)/documents/userLimits/$(uid))
+        ? get(/databases/$(database)/documents/userLimits/$(uid)).data
+        : {};
+    }
+
+    // mesmos valores do limits.service.ts (cliente); 1000 = "ilimitado" na prática
+    function defaultMaxMembers() {
+      return 8;
+    }
+
+    // valor digitado errado no console (string, decimal) é ignorado e cai pro próximo nível,
+    // igual ao cliente; senão a comparação daria erro e travaria a criação de sala
+    function intOr(value, fallback) {
+      return value is int ? value : fallback;
+    }
+
+    function effectiveMaxMembers(uid) {
+      let user = userLimitsDoc(uid);
+      let global = limitsDoc();
+      return user.get('unlimited', false) == true
+        ? 1000
+        : intOr(user.get('maxMembers', null), intOr(global.get('maxMembers', null), defaultMaxMembers()));
+    }
+
     // ---------- users ----------
     match /users/{uid} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
@@ -54,6 +88,17 @@ service cloud.firestore {
       match /rooms/{roomId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+    }
+
+    // ---------- limites: só leitura pelo cliente; quem escreve é o console/Admin SDK ----------
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /userLimits/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
     }
 
     // ---------- pointing types (seed, somente leitura) ----------
@@ -75,19 +120,29 @@ service cloud.firestore {
         && request.resource.data.status == 'open'
         && request.resource.data.members.size() == 1
         && request.resource.data.members[request.auth.uid].status == 'approved'
-        && request.resource.data.members[request.auth.uid].role == 'owner';
+        && request.resource.data.members[request.auth.uid].role == 'owner'
+        // maxMembers é opcional (cliente antigo não manda); se vier, não passa do limite do dono
+        && (!('maxMembers' in request.resource.data)
+            || (request.resource.data.maxMembers is int
+                && request.resource.data.maxMembers <= effectiveMaxMembers(request.auth.uid)));
 
-      // convidado/usuário pede pra entrar (só adiciona a si mesmo, pending)
+      // convidado/usuário pede pra entrar (só adiciona a si mesmo, pending); sala cheia
+      // (aprovados + pendentes) não aceita mais pedidos
       allow update: if isSignedIn()
         && onlyChangedKeys(['members'])
+        && resource.data.members.size() < resource.data.get('maxMembers', defaultMaxMembers())
         && !(request.auth.uid in resource.data.members)
         && request.resource.data.members[request.auth.uid].status == 'pending'
         && request.resource.data.members[request.auth.uid].role == 'member'
         && request.resource.data.members.diff(resource.data.members)
              .affectedKeys().hasOnly([request.auth.uid]);
 
-      // dono aprova/rejeita/remove membro
-      allow update: if isOwner(resource.data) && onlyChangedKeys(['members', 'lastActivityAt']);
+      // dono aprova/rejeita/remove membro; não infla a lista além do teto (sala antiga que já
+      // passa dele pode só encolher ou ficar igual)
+      allow update: if isOwner(resource.data)
+        && onlyChangedKeys(['members', 'lastActivityAt'])
+        && (request.resource.data.members.size() <= resource.data.members.size()
+            || request.resource.data.members.size() <= resource.data.get('maxMembers', defaultMaxMembers()));
 
       // dono encerra a sala manualmente
       allow update: if isOwner(resource.data)

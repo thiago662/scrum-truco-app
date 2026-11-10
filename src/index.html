@@ -1,10 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>ScrumTrucoApp</title>
+  <title>Scrum Truco</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Vote em sigilo, revele junto e debata até chegar num valor combinado. Gratuito e sem instalar nada: quem recebe o link pede entrada sem precisar criar conta.">
+  <meta name="theme-color" content="#ee4b2b">
+  <!-- Prévia ao compartilhar o link (LinkedIn, WhatsApp, Slack, X...). Esses robôs não rodam JS,
+       então as tags têm que estar no HTML estático. A home responde 200 e sempre mostra a prévia.
+       Já os links /rooms/:id são servidos pelo 404.html (cópia deste arquivo) com status 404, e
+       alguns robôs ignoram a página nesse caso: a prévia de link de sala pode não aparecer.
+       og:image tem que ser URL absoluta (se o repo ou o domínio mudar, atualizar aqui) e fica em
+       cache por URL: se a arte mudar, versionar o nome ou usar ?v=N. Sem og:url nem canonical de
+       propósito: apontar pra home faria o LinkedIn/Facebook trocarem o link de uma sala pelo da home. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scrum Truco">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Scrum Truco: estime tarefas em equipe">
+  <meta property="og:description" content="Vote em sigilo, revele junto e debata até chegar num valor combinado. Gratuito e sem instalar nada.">
+  <meta property="og:image" content="https://thiago662.github.io/scrum-truco-app/assets/og-image.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scrum Truco: mesa de votação com cartas viradas e uma carta ainda vazia">
+  <meta name="twitter:card" content="summary_large_image">
   <!-- <link rel="icon" type="image/x-icon" href="favicon.ico"> -->
   <link rel="icon" type="image/png" href="./assets/poker-logo-vermelho.png">
   <script src="https://kit.fontawesome.com/8b2b26f0e4.js" crossorigin="anonymous"></script>
